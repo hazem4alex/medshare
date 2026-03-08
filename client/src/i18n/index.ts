@@ -12,12 +12,13 @@ i18n
       en: { translation: en },
       ar: { translation: ar },
     },
+    lng: localStorage.getItem("i18nextLng") || "ar",
     fallbackLng: "en",
     interpolation: {
       escapeValue: false,
     },
     detection: {
-      order: ["localStorage", "navigator"],
+      order: ["localStorage"],
       caches: ["localStorage"],
     },
   });
