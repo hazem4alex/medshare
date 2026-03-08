@@ -1,0 +1,242 @@
+import { useTranslation } from "react-i18next";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MedicalDisclaimer } from "@/components/medical-disclaimer";
+import { Plus, Trash2, HeartHandshake } from "lucide-react";
+import type { MedicineCategory } from "@shared/schema";
+
+export default function DonatePage() {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const [, navigate] = useLocation();
+
+  const [medicineNameEn, setMedicineNameEn] = useState("");
+  const [medicineNameAr, setMedicineNameAr] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [quantities, setQuantities] = useState([{ unit: "box", quantity: 1 }]);
+  const [locationDescription, setLocationDescription] = useState("");
+  const [locationCoords, setLocationCoords] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const { data: categories } = useQuery<MedicineCategory[]>({ queryKey: ["/api/categories"] });
+
+  const addQuantity = () => {
+    setQuantities([...quantities, { unit: "box", quantity: 1 }]);
+  };
+
+  const removeQuantity = (idx: number) => {
+    setQuantities(quantities.filter((_, i) => i !== idx));
+  };
+
+  const updateQuantity = (idx: number, field: string, value: any) => {
+    const updated = [...quantities];
+    (updated[idx] as any)[field] = field === "quantity" ? Number(value) : value;
+    setQuantities(updated);
+  };
+
+  const submitMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/donations", {
+        medicineNameEn,
+        medicineNameAr,
+        categoryId: categoryId ? Number(categoryId) : null,
+        expiryDate,
+        quantities,
+        locationDescription: locationDescription || null,
+        locationCoords: locationCoords || null,
+        notes: notes || null,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/donations/mine"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      toast({ title: t("donate.success") });
+      navigate("/my-donations");
+    },
+    onError: (err: Error) => {
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!medicineNameEn || !expiryDate || quantities.length === 0) return;
+
+    const expiry = new Date(expiryDate);
+    if (expiry <= new Date()) {
+      toast({ title: t("donate.expiredError"), variant: "destructive" });
+      return;
+    }
+
+    submitMutation.mutate();
+  };
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto space-y-6">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-serif font-bold flex items-center gap-3" data-testid="text-donate-title">
+          <HeartHandshake className="h-6 w-6 text-primary" />
+          {t("donate.title")}
+        </h1>
+        <p className="text-muted-foreground">{t("donate.subtitle")}</p>
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{t("donate.title")}</CardTitle>
+            <CardDescription>{t("donate.subtitle")}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t("donate.medicineNameEn")}</Label>
+                <Input
+                  value={medicineNameEn}
+                  onChange={(e) => setMedicineNameEn(e.target.value)}
+                  required
+                  data-testid="input-medicine-name-en"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("donate.medicineNameAr")}</Label>
+                <Input
+                  value={medicineNameAr}
+                  onChange={(e) => setMedicineNameAr(e.target.value)}
+                  dir="rtl"
+                  data-testid="input-medicine-name-ar"
+                />
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t("donate.category")}</Label>
+                <Select value={categoryId} onValueChange={setCategoryId}>
+                  <SelectTrigger data-testid="select-category">
+                    <SelectValue placeholder={t("donate.selectCategory")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories?.map((c) => (
+                      <SelectItem key={c.id} value={String(c.id)}>{c.nameEn} - {c.nameAr}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{t("donate.expiryDate")}</Label>
+                <Input
+                  type="date"
+                  value={expiryDate}
+                  onChange={(e) => setExpiryDate(e.target.value)}
+                  required
+                  data-testid="input-expiry-date"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <Label className="font-semibold">{t("donate.quantities")}</Label>
+                <Button type="button" variant="secondary" size="sm" onClick={addQuantity} data-testid="button-add-quantity">
+                  <Plus className="h-3 w-3 me-1" />
+                  {t("donate.addQuantity")}
+                </Button>
+              </div>
+              {quantities.map((q, idx) => (
+                <div key={idx} className="flex items-end gap-3 p-3 bg-muted/30 rounded-md">
+                  <div className="flex-1 space-y-1">
+                    <Label className="text-xs">{t("donate.unit")}</Label>
+                    <Select value={q.unit} onValueChange={(val) => updateQuantity(idx, "unit", val)}>
+                      <SelectTrigger data-testid={`select-unit-${idx}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="box">{t("donate.box")}</SelectItem>
+                        <SelectItem value="strip">{t("donate.strip")}</SelectItem>
+                        <SelectItem value="pill">{t("donate.pill")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="w-24 space-y-1">
+                    <Label className="text-xs">{t("donate.quantity")}</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={q.quantity}
+                      onChange={(e) => updateQuantity(idx, "quantity", e.target.value)}
+                      data-testid={`input-quantity-${idx}`}
+                    />
+                  </div>
+                  {quantities.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeQuantity(idx)}
+                      data-testid={`button-remove-quantity-${idx}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t("donate.locationDescription")}</Label>
+              <Textarea
+                value={locationDescription}
+                onChange={(e) => setLocationDescription(e.target.value)}
+                placeholder={t("donate.locationDescPlaceholder")}
+                data-testid="input-location-description"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t("donate.locationCoords")}</Label>
+              <Input
+                value={locationCoords}
+                onChange={(e) => setLocationCoords(e.target.value)}
+                placeholder="https://maps.google.com/..."
+                data-testid="input-location-coords"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t("donate.notes")}</Label>
+              <Textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder={t("donate.notesPlaceholder")}
+                data-testid="input-notes"
+              />
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={submitMutation.isPending}
+              data-testid="button-submit-donation"
+            >
+              {submitMutation.isPending ? t("donate.submitting") : t("donate.submit")}
+            </Button>
+          </CardContent>
+        </Card>
+      </form>
+
+      <MedicalDisclaimer />
+    </div>
+  );
+}
