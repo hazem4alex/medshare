@@ -39,13 +39,14 @@ function AuthenticatedRouter() {
 
 function AuthenticatedLayout() {
   const { i18n } = useTranslation();
+  const isRTL = i18n.dir() === "rtl";
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
+      <div className="flex min-h-screen w-full" dir={isRTL ? "rtl" : "ltr"}>
         <AppSidebar />
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="flex items-center justify-between gap-2 p-2 border-b sticky top-0 z-50 bg-background/80 backdrop-blur-md">
+          <header className="flex items-center justify-between gap-2 px-4 py-2 border-b sticky top-0 z-40 bg-background/95 backdrop-blur-md h-12 shrink-0">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
             <LanguageSwitcher />
           </header>

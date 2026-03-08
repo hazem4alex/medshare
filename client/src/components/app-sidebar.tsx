@@ -19,9 +19,10 @@ import { Home, Search, HeartHandshake, Package, ClipboardList, Shield, LogOut } 
 import type { UserProfile } from "@shared/schema";
 
 export function AppSidebar() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [location] = useLocation();
+  const isRTL = i18n.dir() === "rtl";
 
   const { data: profile } = useQuery<UserProfile>({
     queryKey: ["/api/profile"],
@@ -43,7 +44,7 @@ export function AppSidebar() {
   const initials = [user?.firstName?.[0], user?.lastName?.[0]].filter(Boolean).join("").toUpperCase() || "U";
 
   return (
-    <Sidebar>
+    <Sidebar side={isRTL ? "right" : "left"}>
       <SidebarHeader className="p-4">
         <Link href="/">
           <div className="flex items-center gap-3 cursor-pointer" data-testid="link-home-logo">
