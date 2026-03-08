@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { NotificationBell } from "@/components/notification-bell";
 import { Skeleton } from "@/components/ui/skeleton";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
@@ -48,7 +49,10 @@ function AuthenticatedLayout() {
         <div className="flex flex-col flex-1 min-w-0">
           <header className="flex items-center justify-between gap-2 px-4 py-2 border-b sticky top-0 z-40 bg-background/95 backdrop-blur-md h-12 shrink-0">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
-            <LanguageSwitcher />
+            <div className="flex items-center gap-1">
+              <NotificationBell />
+              <LanguageSwitcher />
+            </div>
           </header>
           <main className="flex-1 overflow-auto">
             <AuthenticatedRouter />

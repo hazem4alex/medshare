@@ -185,6 +185,17 @@ export async function registerRoutes(
       requestedQuantities,
       status: "pending",
     });
+
+    await storage.createNotification({
+      userId: donation.donorId,
+      type: "new_request",
+      titleEn: `New request for "${donation.medicineNameEn}"`,
+      titleAr: `طلب جديد على "${donation.medicineNameAr}"`,
+      relatedRequestId: request.id,
+      relatedDonationId: donationId,
+      isRead: false,
+    });
+
     res.json(request);
   });
 
@@ -195,8 +206,12 @@ export async function registerRoutes(
   });
 
   app.get("/api/requests/:id", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
     const data = await storage.getRequest(Number(req.params.id));
     if (!data) return res.status(404).json({ message: "Request not found" });
+    if (data.request.requesterId !== userId && data.donation?.donorId !== userId) {
+      return res.status(403).json({ message: "Access denied" });
+    }
     res.json(data);
   });
 
@@ -220,10 +235,35 @@ export async function registerRoutes(
       });
     }
 
+    const medicineName = requestData.donation?.medicineNameEn || "";
+    const medicineNameAr = requestData.donation?.medicineNameAr || "";
+    const statusLabels: Record<string, { en: string; ar: string }> = {
+      approved: { en: "approved", ar: "تمت الموافقة على" },
+      rejected: { en: "rejected", ar: "تم رفض" },
+    };
+    const label = statusLabels[status];
+    if (label) {
+      await storage.createNotification({
+        userId: requestData.request.requesterId,
+        type: "request_status",
+        titleEn: `Your request for "${medicineName}" has been ${label.en}`,
+        titleAr: `${label.ar} طلبك على "${medicineNameAr}"`,
+        relatedRequestId: requestId,
+        relatedDonationId: requestData.donation?.id,
+        isRead: false,
+      });
+    }
+
     res.json({ success: true });
   });
 
   app.get("/api/requests/:id/messages", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const reqData = await storage.getRequest(Number(req.params.id));
+    if (!reqData) return res.status(404).json({ message: "Request not found" });
+    if (reqData.request.requesterId !== userId && reqData.donation?.donorId !== userId) {
+      return res.status(403).json({ message: "Access denied" });
+    }
     const data = await storage.getMessagesByRequest(Number(req.params.id));
     res.json(data);
   });
@@ -232,12 +272,37 @@ export async function registerRoutes(
     const userId = req.user.claims.sub;
     const { content } = req.body;
     if (!content?.trim()) return res.status(400).json({ message: "Message content is required" });
+    const reqData = await storage.getRequest(Number(req.params.id));
+    if (!reqData) return res.status(404).json({ message: "Request not found" });
+    if (reqData.request.requesterId !== userId && reqData.donation?.donorId !== userId) {
+      return res.status(403).json({ message: "Access denied" });
+    }
 
+    const requestId = Number(req.params.id);
     const msg = await storage.createMessage({
-      requestId: Number(req.params.id),
+      requestId,
       senderId: userId,
       content: content.trim(),
     });
+
+    const requestData = await storage.getRequest(requestId);
+    if (requestData) {
+      const recipientId = requestData.donation?.donorId === userId
+        ? requestData.request.requesterId
+        : requestData.donation?.donorId;
+      if (recipientId) {
+        await storage.createNotification({
+          userId: recipientId,
+          type: "new_message",
+          titleEn: `New message about "${requestData.donation?.medicineNameEn || ""}"`,
+          titleAr: `رسالة جديدة بخصوص "${requestData.donation?.medicineNameAr || ""}"`,
+          relatedRequestId: requestId,
+          relatedDonationId: requestData.donation?.id,
+          isRead: false,
+        });
+      }
+    }
+
     res.json(msg);
   });
 
@@ -303,6 +368,30 @@ export async function registerRoutes(
       }
     }
 
+    res.json({ success: true });
+  });
+
+  app.get("/api/notifications", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const data = await storage.getNotificationsByUser(userId);
+    res.json(data);
+  });
+
+  app.get("/api/notifications/unread-count", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const count = await storage.getUnreadNotificationCount(userId);
+    res.json({ count });
+  });
+
+  app.patch("/api/notifications/:id/read", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    await storage.markNotificationRead(Number(req.params.id), userId);
+    res.json({ success: true });
+  });
+
+  app.post("/api/notifications/mark-all-read", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    await storage.markAllNotificationsRead(userId);
     res.json({ success: true });
   });
 

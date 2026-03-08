@@ -67,6 +67,7 @@ Preferred communication style: Simple, everyday language.
 | `requests` | Requests against a donation with requested quantities, status, delivery scheduling |
 | `messages` | Chat messages per request thread |
 | `delivery_confirmations` | Dual-confirmation records (donor + requester both confirm delivery) |
+| `notifications` | User notifications (new requests, messages, status changes) with bilingual titles |
 | `admin_flags` | Flagged content for admin review |
 
 **Migrations**: Drizzle Kit (`drizzle-kit push` / `migrations/` directory)

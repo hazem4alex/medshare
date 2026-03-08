@@ -170,6 +170,14 @@
     "donations": "التبرعات",
     "deleteCategory": "حذف"
   },
+  "notifications": {
+    "title": "الإشعارات",
+    "noNotifications": "لا توجد إشعارات بعد",
+    "markAllRead": "تعيين الكل كمقروء",
+    "newRequest": "طلب جديد",
+    "newMessage": "رسالة جديدة",
+    "statusUpdate": "تحديث الحالة"
+  },
   "common": {
     "loading": "جاري التحميل...",
     "error": "حدث خطأ",

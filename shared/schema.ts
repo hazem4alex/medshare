@@ -90,6 +90,18 @@ export const deliveryConfirmations = pgTable("delivery_confirmations", {
   matchStatus: varchar("match_status", { length: 20 }).default("pending").notNull(),
 });
 
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: varchar("type", { length: 30 }).notNull(),
+  titleEn: varchar("title_en", { length: 300 }).notNull(),
+  titleAr: varchar("title_ar", { length: 300 }).notNull(),
+  relatedRequestId: integer("related_request_id").references(() => requests.id),
+  relatedDonationId: integer("related_donation_id").references(() => donations.id),
+  isRead: boolean("is_read").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const adminFlags = pgTable("admin_flags", {
   id: serial("id").primaryKey(),
   flaggedUserId: varchar("flagged_user_id").references(() => users.id),
@@ -146,6 +158,12 @@ export const deliveryConfirmationsRelations = relations(deliveryConfirmations, (
   request: one(requests, { fields: [deliveryConfirmations.requestId], references: [requests.id] }),
 }));
 
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, { fields: [notifications.userId], references: [users.id] }),
+  request: one(requests, { fields: [notifications.relatedRequestId], references: [requests.id] }),
+  donation: one(donations, { fields: [notifications.relatedDonationId], references: [donations.id] }),
+}));
+
 export const insertCountrySchema = createInsertSchema(countries).omit({ id: true });
 export const insertGovernorateSchema = createInsertSchema(governorates).omit({ id: true });
 export const insertAreaSchema = createInsertSchema(areas).omit({ id: true });
@@ -155,6 +173,7 @@ export const insertDonationSchema = createInsertSchema(donations).omit({ id: tru
 export const insertRequestSchema = createInsertSchema(requests).omit({ id: true, createdAt: true });
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true });
 export const insertDeliveryConfirmationSchema = createInsertSchema(deliveryConfirmations).omit({ id: true });
+export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
 export const insertAdminFlagSchema = createInsertSchema(adminFlags).omit({ id: true, createdAt: true });
 
 export type Country = typeof countries.$inferSelect;
@@ -175,5 +194,7 @@ export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type DeliveryConfirmation = typeof deliveryConfirmations.$inferSelect;
 export type InsertDeliveryConfirmation = z.infer<typeof insertDeliveryConfirmationSchema>;
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type AdminFlag = typeof adminFlags.$inferSelect;
 export type InsertAdminFlag = z.infer<typeof insertAdminFlagSchema>;

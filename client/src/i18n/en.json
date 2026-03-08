@@ -170,6 +170,14 @@
     "donations": "Donations",
     "deleteCategory": "Delete"
   },
+  "notifications": {
+    "title": "Notifications",
+    "noNotifications": "No notifications yet",
+    "markAllRead": "Mark all as read",
+    "newRequest": "New Request",
+    "newMessage": "New Message",
+    "statusUpdate": "Status Update"
+  },
   "common": {
     "loading": "Loading...",
     "error": "An error occurred",

@@ -8,10 +8,11 @@ import {
   type Request, type InsertRequest,
   type Message, type InsertMessage,
   type DeliveryConfirmation, type InsertDeliveryConfirmation,
+  type Notification, type InsertNotification,
   type AdminFlag, type InsertAdminFlag,
   countries, governorates, areas, userProfiles,
   medicineCategories, donations, requests, messages,
-  deliveryConfirmations, adminFlags,
+  deliveryConfirmations, notifications, adminFlags,
 } from "@shared/schema";
 import { users } from "@shared/models/auth";
 import { db } from "./db";
@@ -54,6 +55,12 @@ export interface IStorage {
   createDeliveryConfirmation(conf: InsertDeliveryConfirmation): Promise<DeliveryConfirmation>;
   getDeliveryConfirmation(requestId: number): Promise<DeliveryConfirmation | undefined>;
   updateDeliveryConfirmation(id: number, data: Partial<DeliveryConfirmation>): Promise<void>;
+
+  createNotification(notif: InsertNotification): Promise<Notification>;
+  getNotificationsByUser(userId: string): Promise<Notification[]>;
+  getUnreadNotificationCount(userId: string): Promise<number>;
+  markNotificationRead(id: number, userId: string): Promise<void>;
+  markAllNotificationsRead(userId: string): Promise<void>;
 
   createAdminFlag(flag: InsertAdminFlag): Promise<AdminFlag>;
   getAdminFlags(): Promise<any[]>;
@@ -280,6 +287,35 @@ export class DatabaseStorage implements IStorage {
 
   async updateDeliveryConfirmation(id: number, data: Partial<DeliveryConfirmation>): Promise<void> {
     await db.update(deliveryConfirmations).set(data).where(eq(deliveryConfirmations.id, id));
+  }
+
+  async createNotification(notif: InsertNotification): Promise<Notification> {
+    const [result] = await db.insert(notifications).values(notif).returning();
+    return result;
+  }
+
+  async getNotificationsByUser(userId: string): Promise<Notification[]> {
+    return db.select().from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt))
+      .limit(50);
+  }
+
+  async getUnreadNotificationCount(userId: string): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` })
+      .from(notifications)
+      .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
+    return Number(result[0]?.count || 0);
+  }
+
+  async markNotificationRead(id: number, userId: string): Promise<void> {
+    await db.update(notifications).set({ isRead: true })
+      .where(and(eq(notifications.id, id), eq(notifications.userId, userId)));
+  }
+
+  async markAllNotificationsRead(userId: string): Promise<void> {
+    await db.update(notifications).set({ isRead: true })
+      .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
   }
 
   async createAdminFlag(flag: InsertAdminFlag): Promise<AdminFlag> {
