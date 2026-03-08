@@ -16,6 +16,7 @@ import {
 import { users } from "@shared/models/auth";
 import { db } from "./db";
 import { eq, and, or, ilike, gte, sql, desc, asc } from "drizzle-orm";
+import { seedCountries, seedGovernorates } from "./seed-locations";
 
 export interface IStorage {
   getCountries(): Promise<Country[]>;
@@ -342,20 +343,49 @@ export class DatabaseStorage implements IStorage {
 
   async seedInitialData(): Promise<void> {
     const existingCategories = await db.select().from(medicineCategories).limit(1);
-    if (existingCategories.length > 0) return;
+    if (existingCategories.length === 0) {
+      await db.insert(medicineCategories).values([
+        { nameEn: "Pain Relief", nameAr: "مسكنات الألم" },
+        { nameEn: "Antibiotics", nameAr: "المضادات الحيوية" },
+        { nameEn: "Vitamins & Supplements", nameAr: "الفيتامينات والمكملات" },
+        { nameEn: "Allergy & Cold", nameAr: "الحساسية والبرد" },
+        { nameEn: "Digestive Health", nameAr: "صحة الجهاز الهضمي" },
+        { nameEn: "Cardiovascular", nameAr: "أمراض القلب والأوعية" },
+        { nameEn: "Diabetes", nameAr: "السكري" },
+        { nameEn: "Skin Care", nameAr: "العناية بالبشرة" },
+        { nameEn: "Eye & Ear", nameAr: "العين والأذن" },
+        { nameEn: "Other", nameAr: "أخرى" },
+      ]);
+    }
 
-    await db.insert(medicineCategories).values([
-      { nameEn: "Pain Relief", nameAr: "مسكنات الألم" },
-      { nameEn: "Antibiotics", nameAr: "المضادات الحيوية" },
-      { nameEn: "Vitamins & Supplements", nameAr: "الفيتامينات والمكملات" },
-      { nameEn: "Allergy & Cold", nameAr: "الحساسية والبرد" },
-      { nameEn: "Digestive Health", nameAr: "صحة الجهاز الهضمي" },
-      { nameEn: "Cardiovascular", nameAr: "أمراض القلب والأوعية" },
-      { nameEn: "Diabetes", nameAr: "السكري" },
-      { nameEn: "Skin Care", nameAr: "العناية بالبشرة" },
-      { nameEn: "Eye & Ear", nameAr: "العين والأذن" },
-      { nameEn: "Other", nameAr: "أخرى" },
-    ]);
+    const existingCountries = await db.select().from(countries).limit(1);
+    if (existingCountries.length > 0) return;
+
+    for (const countryData of seedCountries) {
+      const [country] = await db.insert(countries).values({
+        nameEn: countryData.nameEn,
+        nameAr: countryData.nameAr,
+      }).returning();
+
+      const govsList = seedGovernorates[countryData.nameEn] || [];
+      for (const govData of govsList) {
+        const [gov] = await db.insert(governorates).values({
+          countryId: country.id,
+          nameEn: govData.nameEn,
+          nameAr: govData.nameAr,
+        }).returning();
+
+        if (govData.areas.length > 0) {
+          await db.insert(areas).values(
+            govData.areas.map(a => ({
+              governorateId: gov.id,
+              nameEn: a.nameEn,
+              nameAr: a.nameAr,
+            }))
+          );
+        }
+      }
+    }
   }
 }
 
