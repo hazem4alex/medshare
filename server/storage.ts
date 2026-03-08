@@ -358,8 +358,15 @@ export class DatabaseStorage implements IStorage {
       ]);
     }
 
-    const existingCountries = await db.select().from(countries).limit(1);
-    if (existingCountries.length > 0) return;
+    const countryCount = await db.select({ count: sql<number>`count(*)` }).from(countries);
+    const totalCountries = Number(countryCount[0]?.count || 0);
+    if (totalCountries >= 22) return;
+
+    if (totalCountries > 0) {
+      await db.delete(areas);
+      await db.delete(governorates);
+      await db.delete(countries);
+    }
 
     for (const countryData of seedCountries) {
       const [country] = await db.insert(countries).values({
