@@ -1,0 +1,148 @@
+
+
+Build a charitable web/mobile application called "MedShare" that allows users to donate and request surplus household medicines in a safe, non-commercial, community-based way.
+
+The goal is to reduce waste and help people access medicines for free, while preventing fraud or commercial misuse.
+
+====================================
+1. TECH STACK REQUIREMENTS
+====================================
+- Backend: Node.js with Express OR Python with FastAPI (choose one and justify)
+- Database: PostgreSQL 
+- Frontend: Simple responsive web UI using HTML/CSS + React OR server-side templates
+- Authentication: Email + password
+- Internationalization (i18n): Arabic and English support (RTL/LTR)
+- Deployment-ready for Replit environment
+
+====================================
+2. USER REGISTRATION & ANTI-FRAUD MECHANISM
+====================================
+Each user must:
+- Register with:
+  - Full name
+  - Email (verified)
+  - Password
+  - Country
+  - Region / City
+- Accept a mandatory declaration:
+  "I confirm this platform is for charitable use only and not for selling or commercial distribution."
+- Anti-commercial abuse mechanisms:
+  - Limit number of active donations per user
+  - Rate-limit requests
+  - Flag repeated suspicious behavior
+  - Admin review dashboard (basic)
+  - Limit the donations apperance per logged-in user country as registered in user profile.
+  - hide expried medicenes from dontaion view.
+====================================
+3. DONATION FLOW (DONOR SIDE)
+====================================
+A registered user can donate medicines.
+
+Donation form must include:
+- Medicine name (Arabic & English)
+- Medicine category (categories to be selected from database, admin user can add/remove categories from admin panel)
+- Expiry date (must reject expired medicines)
+- Quantity with unit:
+  - Box
+  - Strip
+  - Pill
+- can add multiple qty (i.e 1 box and 2 strips)
+- Delivery location (donor chooses):
+  - Address description
+  - Google Maps link or coordinates (optional)
+- Notes (optional)
+
+Business rules:
+- Medicines nearing expiration (e.g., < 30 days) should be visually flagged
+- Donation remains active until quantity reaches zero or expiry date passes
+
+====================================
+4. SEARCH & REQUEST FLOW (RECIPIENT SIDE)
+====================================
+Users can:
+- Search medicines by name in Arabic or English
+- View only non-expired medicines
+- Filter by:
+  - Category
+  - Region
+- See:
+  - Available quantity
+  - Approximate location
+  - Expiry date
+
+Request process:
+- User submits a request for a specific quantity
+- Request goes to the donor for approval
+
+====================================
+5. DONOR REQUEST MANAGEMENT
+====================================
+Donor dashboard must:
+- Show incoming requests
+- Allow donor to:
+  - Approve / reject request
+  - Propose delivery date & time
+- Messaging system (simple text-based, internal)
+
+====================================
+6. DELIVERY CONFIRMATION & QUANTITY ADJUSTMENT
+====================================
+After physical delivery:
+- Recipient confirms received quantity
+- Donor confirms handed-over quantity
+- System logic:
+  - If both confirmations match → deduct quantity
+  - If mismatch → flag for admin review
+
+====================================
+7. UI / UX REQUIREMENTS
+====================================
+- Minimal and clean UI
+- Mobile-friendly
+- Language switcher (Arabic / English)
+- RTL support for Arabic
+- Clear warnings:
+  - "Not a substitute for medical advice"
+  - "Check medicine packaging before use"
+
+====================================
+8. DATA MODELS (DESIGN REQUIRED)
+====================================
+Design and explain database tables for:
+- Users
+- Countries
+- Governtates
+- Areas
+- Medicines
+- Medicine Category
+- Donations
+- Requests
+- Delivery confirmations
+- Admin flags / reports
+
+====================================
+9. SECURITY & LEGAL CONSIDERATIONS
+====================================
+- No payment or pricing fields anywhere
+- No public display of full addresses
+- Basic input validation & sanitation
+- Medical disclaimer displayed globally
+
+====================================
+10. OUTPUT REQUIRED
+====================================
+Produce:
+1. High-level system architecture
+2. Database schema (tables + key fields)
+3. API endpoints (REST)
+4. Core business logic explanation
+5. Sample backend code for:
+   - User registration
+   - Medicine donation
+   - Medicine search
+   - Request approval
+   - Delivery confirmation
+6. Simple frontend page examples
+7. Notes on future scalability (mobile app, moderation AI, NGO partnerships)
+
+Focus on clarity, clean architecture, and charity-first ethics.
