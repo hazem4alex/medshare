@@ -341,44 +341,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async seedInitialData(): Promise<void> {
-    const existing = await db.select().from(countries).limit(1);
-    if (existing.length > 0) return;
-
-    const [egypt] = await db.insert(countries).values([
-      { nameEn: "Egypt", nameAr: "مصر" },
-      { nameEn: "Saudi Arabia", nameAr: "المملكة العربية السعودية" },
-      { nameEn: "Jordan", nameAr: "الأردن" },
-      { nameEn: "UAE", nameAr: "الإمارات العربية المتحدة" },
-      { nameEn: "Kuwait", nameAr: "الكويت" },
-    ]).returning();
-
-    const [cairo, alex, giza] = await db.insert(governorates).values([
-      { countryId: egypt.id, nameEn: "Cairo", nameAr: "القاهرة" },
-      { countryId: egypt.id, nameEn: "Alexandria", nameAr: "الإسكندرية" },
-      { countryId: egypt.id, nameEn: "Giza", nameAr: "الجيزة" },
-    ]).returning();
-
-    await db.insert(areas).values([
-      { governorateId: cairo.id, nameEn: "Maadi", nameAr: "المعادي" },
-      { governorateId: cairo.id, nameEn: "Nasr City", nameAr: "مدينة نصر" },
-      { governorateId: cairo.id, nameEn: "Heliopolis", nameAr: "مصر الجديدة" },
-      { governorateId: alex.id, nameEn: "Smouha", nameAr: "سموحة" },
-      { governorateId: alex.id, nameEn: "Mandara", nameAr: "المندرة" },
-      { governorateId: giza.id, nameEn: "Dokki", nameAr: "الدقي" },
-      { governorateId: giza.id, nameEn: "Mohandessin", nameAr: "المهندسين" },
-    ]);
-
-    const saudiCountry = (await db.select().from(countries).where(eq(countries.nameEn, "Saudi Arabia")))[0];
-    const [riyadh, jeddah] = await db.insert(governorates).values([
-      { countryId: saudiCountry.id, nameEn: "Riyadh", nameAr: "الرياض" },
-      { countryId: saudiCountry.id, nameEn: "Jeddah", nameAr: "جدة" },
-    ]).returning();
-
-    await db.insert(areas).values([
-      { governorateId: riyadh.id, nameEn: "Olaya", nameAr: "العليا" },
-      { governorateId: riyadh.id, nameEn: "Malaz", nameAr: "الملز" },
-      { governorateId: jeddah.id, nameEn: "Al Hamra", nameAr: "الحمراء" },
-    ]);
+    const existingCategories = await db.select().from(medicineCategories).limit(1);
+    if (existingCategories.length > 0) return;
 
     await db.insert(medicineCategories).values([
       { nameEn: "Pain Relief", nameAr: "مسكنات الألم" },
