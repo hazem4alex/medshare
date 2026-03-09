@@ -47,8 +47,8 @@ export default function DonatePage() {
   const submitMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/donations", {
-        medicineNameEn,
-        medicineNameAr,
+        medicineNameEn: medicineNameEn || medicineNameAr,
+        medicineNameAr: medicineNameAr || medicineNameEn,
         categoryId: categoryId ? Number(categoryId) : null,
         expiryDate,
         quantities,
@@ -71,7 +71,7 @@ export default function DonatePage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!medicineNameEn || !expiryDate || quantities.length === 0) return;
+    if ((!medicineNameEn && !medicineNameAr) || !expiryDate || quantities.length === 0) return;
 
     const expiry = new Date(expiryDate);
     if (expiry <= new Date()) {
@@ -99,24 +99,26 @@ export default function DonatePage() {
             <CardDescription>{t("donate.subtitle")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{t("donate.medicineNameEn")}</Label>
-                <Input
-                  value={medicineNameEn}
-                  onChange={(e) => setMedicineNameEn(e.target.value)}
-                  required
-                  data-testid="input-medicine-name-en"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>{t("donate.medicineNameAr")}</Label>
-                <Input
-                  value={medicineNameAr}
-                  onChange={(e) => setMedicineNameAr(e.target.value)}
-                  dir="rtl"
-                  data-testid="input-medicine-name-ar"
-                />
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">{t("donate.nameHint")}</p>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t("donate.medicineNameEn")}</Label>
+                  <Input
+                    value={medicineNameEn}
+                    onChange={(e) => setMedicineNameEn(e.target.value)}
+                    data-testid="input-medicine-name-en"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("donate.medicineNameAr")}</Label>
+                  <Input
+                    value={medicineNameAr}
+                    onChange={(e) => setMedicineNameAr(e.target.value)}
+                    dir="rtl"
+                    data-testid="input-medicine-name-ar"
+                  />
+                </div>
               </div>
             </div>
 

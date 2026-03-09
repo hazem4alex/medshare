@@ -104,7 +104,8 @@
     "success": "Donation created successfully!",
     "expiredError": "Cannot donate expired medicines",
     "limitReached": "You have reached the maximum number of active donations",
-    "removeQty": "Remove"
+    "removeQty": "Remove",
+    "nameHint": "At least one name is required (English or Arabic)"
   },
   "browse": {
     "title": "Browse Medicines",
