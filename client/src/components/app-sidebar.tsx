@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation, Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import {
   Sidebar,
   SidebarContent,
@@ -13,9 +14,10 @@ import {
   SidebarMenuItem,
   SidebarFooter,
   SidebarHeader,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, Search, HeartHandshake, Package, ClipboardList, Shield, LogOut } from "lucide-react";
+import { Home, Search, HeartHandshake, Package, ClipboardList, Shield, LogOut, User } from "lucide-react";
 import type { UserProfile } from "@shared/schema";
 
 export function AppSidebar() {
@@ -23,6 +25,7 @@ export function AppSidebar() {
   const { user } = useAuth();
   const [location] = useLocation();
   const isRTL = i18n.dir() === "rtl";
+  const { isMobile, setOpenMobile } = useSidebar();
 
   const { data: profile } = useQuery<UserProfile>({
     queryKey: ["/api/profile"],
@@ -35,11 +38,21 @@ export function AppSidebar() {
     { title: t("nav.donate"), url: "/donate", icon: HeartHandshake },
     { title: t("nav.myDonations"), url: "/my-donations", icon: Package },
     { title: t("nav.myRequests"), url: "/my-requests", icon: ClipboardList },
+    { title: t("nav.profile"), url: "/profile", icon: User },
   ];
 
   if (profile?.isAdmin) {
     menuItems.push({ title: t("nav.admin"), url: "/admin", icon: Shield });
   }
+
+  const handleNavClick = (url: string) => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+    if (location === url) {
+      queryClient.invalidateQueries();
+    }
+  };
 
   const initials = [user?.firstName?.[0], user?.lastName?.[0]].filter(Boolean).join("").toUpperCase() || "U";
 
@@ -70,7 +83,11 @@ export function AppSidebar() {
                     data-active={location === item.url}
                     className="data-[active=true]:bg-sidebar-accent"
                   >
-                    <Link href={item.url} data-testid={`link-nav-${item.url.replace("/", "") || "home"}`}>
+                    <Link
+                      href={item.url}
+                      onClick={() => handleNavClick(item.url)}
+                      data-testid={`link-nav-${item.url.replace("/", "") || "home"}`}
+                    >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </Link>

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
-import { Package, ClipboardList, HeartHandshake, Search, TrendingUp, Inbox } from "lucide-react";
+import { Package, ClipboardList, HeartHandshake, Search, TrendingUp, Inbox, Globe, CheckCircle2 } from "lucide-react";
 
 export default function HomePage() {
   const { t } = useTranslation();
@@ -21,6 +21,13 @@ export default function HomePage() {
     queryKey: ["/api/dashboard"],
   });
 
+  const { data: publicStats } = useQuery<{
+    totalAvailable: number;
+    totalCompleted: number;
+  }>({
+    queryKey: ["/api/stats/public"],
+  });
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-8">
       <div className="space-y-1">
@@ -29,6 +36,29 @@ export default function HomePage() {
         </h1>
         <p className="text-muted-foreground">{t("home.dashboard")}</p>
       </div>
+
+      {publicStats && (
+        <div className="grid grid-cols-2 gap-4">
+          <Card className="bg-primary/5 border-primary/20">
+            <CardContent className="p-5 space-y-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Globe className="h-4 w-4 text-primary" />
+                {t("home.totalAvailable")}
+              </div>
+              <p className="text-2xl font-bold text-primary" data-testid="text-total-available">{publicStats.totalAvailable}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-primary/5 border-primary/20">
+            <CardContent className="p-5 space-y-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+                {t("home.totalCompleted")}
+              </div>
+              <p className="text-2xl font-bold text-primary" data-testid="text-total-completed">{publicStats.totalCompleted}</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading ? (

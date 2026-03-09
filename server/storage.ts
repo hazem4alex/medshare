@@ -40,9 +40,14 @@ export interface IStorage {
     governorateId?: number;
     countryId?: number;
   }): Promise<any[]>;
+  updateDonation(id: number, data: Partial<Donation>): Promise<Donation>;
+  deleteDonation(id: number): Promise<void>;
   updateDonationQuantities(id: number, quantities: any[]): Promise<void>;
   updateDonationStatus(id: number, status: string): Promise<void>;
+  getPublicStats(): Promise<{ totalAvailable: number; totalCompleted: number }>;
 
+  getPendingRequestCountsByDonor(donorId: string): Promise<Record<number, number>>;
+  hasExistingRequest(donationId: number, requesterId: string): Promise<boolean>;
   createRequest(req: InsertRequest): Promise<Request>;
   getRequest(id: number): Promise<any>;
   getRequestsByDonation(donationId: number): Promise<any[]>;
@@ -189,6 +194,69 @@ export class DatabaseStorage implements IStorage {
     return results;
   }
 
+  async updateDonation(id: number, data: Partial<Donation>): Promise<Donation> {
+    const [result] = await db.update(donations).set(data).where(eq(donations.id, id)).returning();
+    return result;
+  }
+
+  async deleteDonation(id: number): Promise<void> {
+    await db.delete(notifications).where(eq(notifications.relatedDonationId, id));
+    await db.delete(requests).where(eq(requests.donationId, id));
+    await db.delete(donations).where(eq(donations.id, id));
+  }
+
+  async getPublicStats(): Promise<{ totalAvailable: number; totalCompleted: number }> {
+    const available = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(donations)
+      .where(and(eq(donations.status, "active"), gte(donations.expiryDate, sql`CURRENT_DATE`)));
+    const completed = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(donations)
+      .where(eq(donations.status, "completed"));
+    return {
+      totalAvailable: Number(available[0]?.count || 0),
+      totalCompleted: Number(completed[0]?.count || 0),
+    };
+  }
+
+  async getPendingRequestCountsByDonor(donorId: string): Promise<Record<number, number>> {
+    const rows = await db
+      .select({
+        donationId: requests.donationId,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(requests)
+      .innerJoin(donations, eq(requests.donationId, donations.id))
+      .where(
+        and(
+          eq(donations.donorId, donorId),
+          eq(requests.status, "pending")
+        )
+      )
+      .groupBy(requests.donationId);
+    const result: Record<number, number> = {};
+    for (const row of rows) {
+      result[row.donationId] = row.count;
+    }
+    return result;
+  }
+
+  async hasExistingRequest(donationId: number, requesterId: string): Promise<boolean> {
+    const [existing] = await db
+      .select({ id: requests.id })
+      .from(requests)
+      .where(
+        and(
+          eq(requests.donationId, donationId),
+          eq(requests.requesterId, requesterId),
+          or(eq(requests.status, "pending"), eq(requests.status, "approved"), eq(requests.status, "delivered"))
+        )
+      )
+      .limit(1);
+    return !!existing;
+  }
+
   async updateDonationQuantities(id: number, quantities: any[]): Promise<void> {
     const allZero = quantities.every((q: any) => q.remaining <= 0);
     await db.update(donations).set({
@@ -227,6 +295,7 @@ export class DatabaseStorage implements IStorage {
         request: requests,
         requesterFirstName: users.firstName,
         requesterLastName: users.lastName,
+        requesterProfileImage: users.profileImageUrl,
       })
       .from(requests)
       .leftJoin(users, eq(requests.requesterId, users.id))
@@ -361,7 +430,7 @@ export class DatabaseStorage implements IStorage {
     const totalDonated = await db
       .select({ count: sql<number>`count(*)` })
       .from(donations)
-      .where(eq(donations.donorId, userId));
+      .where(and(eq(donations.donorId, userId), eq(donations.status, "completed")));
 
     const incomingPending = await db
       .select({ count: sql<number>`count(*)` })

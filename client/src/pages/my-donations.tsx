@@ -3,14 +3,17 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Package, Calendar, AlertTriangle, Check, X, Clock, MessageCircle } from "lucide-react";
+import { Package, Calendar, AlertTriangle, Check, X, Clock, MessageCircle, Pencil, Trash2 } from "lucide-react";
 import { Link } from "wouter";
 import type { Donation } from "@shared/schema";
 
@@ -30,14 +33,22 @@ export default function MyDonationsPage() {
   const [deliveryDate, setDeliveryDate] = useState("");
   const [deliveryTime, setDeliveryTime] = useState("");
   const [approveRequestId, setApproveRequestId] = useState<number | null>(null);
+  const [editDonation, setEditDonation] = useState<Donation | null>(null);
+  const [editForm, setEditForm] = useState({ medicineNameEn: "", medicineNameAr: "", notes: "", locationDescription: "" });
 
   const { data: myDonations, isLoading } = useQuery<Donation[]>({
     queryKey: ["/api/donations/mine"],
   });
 
+  const { data: pendingCounts } = useQuery<Record<number, number>>({
+    queryKey: ["/api/donations/mine/pending-counts"],
+    staleTime: 0,
+  });
+
   const { data: donationRequests } = useQuery<any[]>({
     queryKey: ["/api/donations", selectedDonationId, "requests"],
     enabled: !!selectedDonationId,
+    staleTime: 0,
   });
 
   const statusMutation = useMutation({
@@ -51,15 +62,55 @@ export default function MyDonationsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/donations"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/donations/mine/pending-counts"] });
       setApproveRequestId(null);
       setDeliveryDate("");
       setDeliveryTime("");
-      toast({ title: "Request updated" });
+      toast({ title: t("myDonations.requestUpdated") });
     },
     onError: (err: Error) => {
       toast({ title: t("common.error"), description: err.message, variant: "destructive" });
     },
   });
+
+  const editMutation = useMutation({
+    mutationFn: async () => {
+      if (!editDonation) return;
+      await apiRequest("PATCH", `/api/donations/${editDonation.id}`, editForm);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/donations"] });
+      setEditDonation(null);
+      toast({ title: t("myDonations.editSuccess") });
+    },
+    onError: (err: Error) => {
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/donations/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/donations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      toast({ title: t("myDonations.deleteSuccess") });
+    },
+    onError: (err: Error) => {
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
+    },
+  });
+
+  const openEditDialog = (d: Donation) => {
+    setEditDonation(d);
+    setEditForm({
+      medicineNameEn: d.medicineNameEn,
+      medicineNameAr: d.medicineNameAr,
+      notes: d.notes || "",
+      locationDescription: d.locationDescription || "",
+    });
+  };
 
   const unitLabel = (unit: string) => {
     const map: Record<string, string> = { box: t("units.box"), strip: t("units.strip"), pill: t("units.pill") };
@@ -132,9 +183,9 @@ export default function MyDonationsPage() {
                           {t("browse.nearExpiry")}
                         </Badge>
                       )}
-                      {isExpired && <Badge variant="destructive">Expired</Badge>}
+                      {isExpired && <Badge variant="destructive">{t("myDonations.expired")}</Badge>}
                       <Badge variant={d.status === "active" ? "default" : "secondary"}>
-                        {d.status}
+                        {d.status === "active" ? t("myDonations.active") : d.status === "completed" ? t("myDonations.completed") : d.status}
                       </Badge>
                     </div>
                   </div>
@@ -154,15 +205,64 @@ export default function MyDonationsPage() {
                     ))}
                   </div>
 
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setSelectedDonationId(selectedDonationId === d.id ? null : d.id)}
-                    data-testid={`button-view-requests-${d.id}`}
-                  >
-                    <MessageCircle className="h-3.5 w-3.5 me-1" />
-                    {t("myDonations.incomingRequests")}
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setSelectedDonationId(selectedDonationId === d.id ? null : d.id)}
+                      data-testid={`button-view-requests-${d.id}`}
+                    >
+                      <MessageCircle className="h-3.5 w-3.5 me-1" />
+                      {t("myDonations.incomingRequests")}
+                      {(pendingCounts?.[d.id] ?? 0) > 0 && (
+                        <Badge variant="destructive" className="ms-2 h-5 min-w-5 px-1 text-xs">
+                          {pendingCounts[d.id]}
+                        </Badge>
+                      )}
+                    </Button>
+
+                    {d.status === "active" && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditDialog(d)}
+                          data-testid={`button-edit-donation-${d.id}`}
+                        >
+                          <Pencil className="h-3.5 w-3.5 me-1" />
+                          {t("myDonations.edit")}
+                        </Button>
+
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              data-testid={`button-delete-donation-${d.id}`}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 me-1" />
+                              {t("myDonations.deleteDonation")}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>{t("myDonations.confirmDelete")}</AlertDialogTitle>
+                              <AlertDialogDescription>{t("myDonations.confirmDeleteDesc")}</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteMutation.mutate(d.id)}
+                                data-testid={`button-confirm-delete-${d.id}`}
+                              >
+                                {t("common.delete")}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </>
+                    )}
+                  </div>
 
                   {selectedDonationId === d.id && (
                     <div className="mt-3 space-y-3 border-t pt-3">
@@ -173,9 +273,17 @@ export default function MyDonationsPage() {
                         donationRequests.map((r: any) => (
                           <div key={r.request.id} className="bg-muted/30 rounded-md p-3 space-y-2" data-testid={`card-request-${r.request.id}`}>
                             <div className="flex items-center justify-between gap-2 flex-wrap">
-                              <span className="text-sm font-medium">
-                                {r.requesterFirstName} {r.requesterLastName}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-7 w-7">
+                                  <AvatarImage src={r.requesterProfileImage || ""} />
+                                  <AvatarFallback className="text-xs">
+                                    {(r.requesterFirstName?.[0] || "").toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="text-sm font-medium">
+                                  {r.requesterFirstName} {r.requesterLastName}
+                                </span>
+                              </div>
                               {statusBadge(r.request.status)}
                             </div>
                             <div className="flex flex-wrap gap-2">
@@ -264,6 +372,60 @@ export default function MyDonationsPage() {
               data-testid="button-confirm-approve"
             >
               {t("myDonations.approve")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editDonation} onOpenChange={() => setEditDonation(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("myDonations.editDonation")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t("donate.medicineNameEn")}</Label>
+              <Input
+                value={editForm.medicineNameEn}
+                onChange={(e) => setEditForm({ ...editForm, medicineNameEn: e.target.value })}
+                data-testid="input-edit-name-en"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("donate.medicineNameAr")}</Label>
+              <Input
+                value={editForm.medicineNameAr}
+                onChange={(e) => setEditForm({ ...editForm, medicineNameAr: e.target.value })}
+                data-testid="input-edit-name-ar"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("donate.locationDescription")}</Label>
+              <Input
+                value={editForm.locationDescription}
+                onChange={(e) => setEditForm({ ...editForm, locationDescription: e.target.value })}
+                data-testid="input-edit-location"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("donate.notes")}</Label>
+              <Textarea
+                value={editForm.notes}
+                onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                data-testid="input-edit-notes"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setEditDonation(null)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              onClick={() => editMutation.mutate()}
+              disabled={editMutation.isPending}
+              data-testid="button-save-edit"
+            >
+              {editMutation.isPending ? t("profile.saving") : t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>

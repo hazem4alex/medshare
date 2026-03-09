@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
-import { Search, MapPin, Calendar, AlertTriangle, Package } from "lucide-react";
+import { Search, MapPin, Calendar, AlertTriangle, Package, CheckCircle } from "lucide-react";
 import type { MedicineCategory } from "@shared/schema";
 
 function isNearExpiry(expiryDate: string): boolean {
@@ -33,6 +33,14 @@ export default function BrowsePage() {
   const [requestQuantities, setRequestQuantities] = useState<Array<{ unit: string; quantity: number }>>([]);
 
   const { data: categories } = useQuery<MedicineCategory[]>({ queryKey: ["/api/categories"] });
+
+  const { data: myRequests } = useQuery<any[]>({ queryKey: ["/api/requests/mine"] });
+
+  const requestedDonationIds = new Set(
+    myRequests
+      ?.filter((r: any) => r.request.status === "pending" || r.request.status === "approved")
+      .map((r: any) => r.request.donationId) || []
+  );
 
   const searchParams = new URLSearchParams();
   if (search) searchParams.set("search", search);
@@ -133,6 +141,7 @@ export default function BrowsePage() {
           {results.map((item: any) => {
             const d = item.donation;
             const nearExpiry = isNearExpiry(d.expiryDate);
+            const alreadyRequested = requestedDonationIds.has(d.id);
 
             return (
               <Card key={d.id} className="hover-elevate" data-testid={`card-donation-${d.id}`}>
@@ -188,13 +197,20 @@ export default function BrowsePage() {
                     <span className="text-xs text-muted-foreground">
                       {t("browse.donatedBy")}: {item.donorFirstName} {item.donorLastName?.[0]}.
                     </span>
-                    <Button
-                      size="sm"
-                      onClick={() => openRequestDialog(item)}
-                      data-testid={`button-request-${d.id}`}
-                    >
-                      {t("browse.requestMedicine")}
-                    </Button>
+                    {alreadyRequested ? (
+                      <Badge variant="secondary" className="flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3" />
+                        {t("browse.alreadyRequested")}
+                      </Badge>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => openRequestDialog(item)}
+                        data-testid={`button-request-${d.id}`}
+                      >
+                        {t("browse.requestMedicine")}
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>

@@ -53,7 +53,17 @@
     "acceptDeclaration": "I accept the declaration",
     "save": "Save Profile",
     "saving": "Saving...",
-    "editProfile": "Edit Profile"
+    "editProfile": "Edit Profile",
+    "editProfileDesc": "Update your personal information and location settings.",
+    "personalInfo": "Personal Information",
+    "locationInfo": "Location Settings",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "photoUrl": "Profile Photo URL",
+    "photoUrlPlaceholder": "https://example.com/photo.jpg",
+    "savePersonalInfo": "Save Personal Info",
+    "saveLocation": "Save Location",
+    "updateSuccess": "Profile updated successfully!"
   },
   "home": {
     "welcomeBack": "Welcome, {{name}}",
@@ -61,6 +71,8 @@
     "activeDonations": "Active Donations",
     "pendingRequests": "Pending Requests",
     "totalDonated": "Total Donated",
+    "totalAvailable": "Available Medicines",
+    "totalCompleted": "Completed Donations",
     "recentActivity": "Recent Activity",
     "quickActions": "Quick Actions",
     "noDonations": "No active donations yet",
@@ -108,7 +120,8 @@
     "available": "Available",
     "requestMedicine": "Request",
     "donatedBy": "Donated by",
-    "location": "Location"
+    "location": "Location",
+    "alreadyRequested": "Already Requested"
   },
   "request": {
     "title": "Request Medicine",
@@ -132,7 +145,18 @@
     "reject": "Reject",
     "proposeDelivery": "Propose Delivery",
     "deliveryDate": "Delivery Date",
-    "deliveryTime": "Delivery Time"
+    "deliveryTime": "Delivery Time",
+    "requestUpdated": "Request updated successfully",
+    "edit": "Edit",
+    "editDonation": "Edit Donation",
+    "editSuccess": "Donation updated successfully",
+    "deleteDonation": "Delete",
+    "deleteSuccess": "Donation deleted successfully",
+    "confirmDelete": "Delete Donation?",
+    "confirmDeleteDesc": "This action cannot be undone. The donation will be permanently removed.",
+    "active": "Active",
+    "completed": "Completed",
+    "expired": "Expired"
   },
   "myRequests": {
     "title": "My Requests",

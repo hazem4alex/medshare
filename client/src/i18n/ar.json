@@ -53,7 +53,17 @@
     "acceptDeclaration": "أقبل الإقرار",
     "save": "حفظ الملف الشخصي",
     "saving": "جاري الحفظ...",
-    "editProfile": "تعديل الملف الشخصي"
+    "editProfile": "تعديل الملف الشخصي",
+    "editProfileDesc": "تحديث معلوماتك الشخصية وإعدادات الموقع.",
+    "personalInfo": "المعلومات الشخصية",
+    "locationInfo": "إعدادات الموقع",
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "photoUrl": "رابط صورة الملف الشخصي",
+    "photoUrlPlaceholder": "https://example.com/photo.jpg",
+    "savePersonalInfo": "حفظ المعلومات الشخصية",
+    "saveLocation": "حفظ الموقع",
+    "updateSuccess": "تم تحديث الملف الشخصي بنجاح!"
   },
   "home": {
     "welcomeBack": "مرحباً، {{name}}",
@@ -61,6 +71,8 @@
     "activeDonations": "التبرعات النشطة",
     "pendingRequests": "الطلبات المعلقة",
     "totalDonated": "إجمالي التبرعات",
+    "totalAvailable": "الأدوية المتاحة",
+    "totalCompleted": "التبرعات المكتملة",
     "recentActivity": "النشاط الأخير",
     "quickActions": "إجراءات سريعة",
     "noDonations": "لا توجد تبرعات نشطة بعد",
@@ -108,7 +120,8 @@
     "available": "متاح",
     "requestMedicine": "طلب",
     "donatedBy": "تبرع من",
-    "location": "الموقع"
+    "location": "الموقع",
+    "alreadyRequested": "تم الطلب مسبقاً"
   },
   "request": {
     "title": "طلب دواء",
@@ -132,7 +145,18 @@
     "reject": "رفض",
     "proposeDelivery": "اقتراح تسليم",
     "deliveryDate": "تاريخ التسليم",
-    "deliveryTime": "وقت التسليم"
+    "deliveryTime": "وقت التسليم",
+    "requestUpdated": "تم تحديث الطلب بنجاح",
+    "edit": "تعديل",
+    "editDonation": "تعديل التبرع",
+    "editSuccess": "تم تحديث التبرع بنجاح",
+    "deleteDonation": "حذف",
+    "deleteSuccess": "تم حذف التبرع بنجاح",
+    "confirmDelete": "حذف التبرع؟",
+    "confirmDeleteDesc": "لا يمكن التراجع عن هذا الإجراء. سيتم حذف التبرع نهائياً.",
+    "active": "نشط",
+    "completed": "مكتمل",
+    "expired": "منتهي الصلاحية"
   },
   "myRequests": {
     "title": "طلباتي",

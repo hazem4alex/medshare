@@ -37,6 +37,7 @@ Preferred communication style: Simple, everyday language.
 - `my-requests.tsx` — Requester view of their requests
 - `request-detail.tsx` — Messaging thread + delivery confirmation
 - `admin.tsx` — Category management + flagged content review
+- `profile.tsx` — Edit user profile (name, photo URL, location settings)
 
 ### Backend Architecture
 - **Runtime**: Node.js with Express (TypeScript, ESM modules)
@@ -49,6 +50,11 @@ Preferred communication style: Simple, everyday language.
 - Max 10 active donations per user (`MAX_ACTIVE_DONATIONS`)
 - Expired medicines are rejected at donation creation and hidden from browse results
 - Donations are filtered by the requesting user's registered country
+- Duplicate request prevention: users cannot submit a second non-rejected request for the same donation
+- Donation edit/delete: owners can edit active donations (name, notes, location) and delete them if no pending/approved requests exist
+- Dashboard `totalDonated` counts only completed donations
+- Public stats API (`GET /api/stats/public`) returns total available and completed donations
+- Profile editing via `PATCH /api/auth/user` for name/photo changes
 - Only admins can manage categories or review flags
 
 ### Data Storage

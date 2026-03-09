@@ -2,6 +2,10 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+import { db } from "./db";
+import { userProfiles } from "@shared/schema";
+import { users } from "@shared/models/auth";
+import { eq, sql } from "drizzle-orm";
 
 const MAX_ACTIVE_DONATIONS = 10;
 
@@ -155,6 +159,12 @@ export async function registerRoutes(
     res.json(data);
   });
 
+  app.get("/api/donations/mine/pending-counts", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const counts = await storage.getPendingRequestCountsByDonor(userId);
+    res.json(counts);
+  });
+
   app.get("/api/donations/:id", isAuthenticated, async (req: any, res) => {
     const donation = await storage.getDonation(Number(req.params.id));
     if (!donation) return res.status(404).json({ message: "Donation not found" });
@@ -162,8 +172,57 @@ export async function registerRoutes(
   });
 
   app.get("/api/donations/:id/requests", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const donation = await storage.getDonation(Number(req.params.id));
+    if (!donation) return res.status(404).json({ message: "Donation not found" });
+    const profile = await storage.getUserProfile(userId);
+    if (donation.donorId !== userId && !profile?.isAdmin) {
+      return res.status(403).json({ message: "Access denied" });
+    }
     const data = await storage.getRequestsByDonation(Number(req.params.id));
     res.json(data);
+  });
+
+  app.patch("/api/donations/:id", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const donation = await storage.getDonation(Number(req.params.id));
+    if (!donation) return res.status(404).json({ message: "Donation not found" });
+    if (donation.donorId !== userId) return res.status(403).json({ message: "Access denied" });
+    if (donation.status !== "active") return res.status(400).json({ message: "Can only edit active donations" });
+
+    const { medicineNameEn, medicineNameAr, quantities, notes, locationDescription, locationCoords } = req.body;
+    const updateData: any = {};
+    if (medicineNameEn !== undefined) updateData.medicineNameEn = medicineNameEn;
+    if (medicineNameAr !== undefined) updateData.medicineNameAr = medicineNameAr;
+    if (notes !== undefined) updateData.notes = notes;
+    if (locationDescription !== undefined) updateData.locationDescription = locationDescription;
+    if (locationCoords !== undefined) updateData.locationCoords = locationCoords;
+    if (quantities !== undefined) updateData.quantities = quantities;
+
+    const updated = await storage.updateDonation(donation.id, updateData);
+    res.json(updated);
+  });
+
+  app.delete("/api/donations/:id", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const donation = await storage.getDonation(Number(req.params.id));
+    if (!donation) return res.status(404).json({ message: "Donation not found" });
+    if (donation.donorId !== userId) return res.status(403).json({ message: "Access denied" });
+
+    const existingRequests = await storage.getRequestsByDonation(donation.id);
+    const hasActiveRequests = existingRequests.some((r: any) =>
+      r.request.status === "pending" || r.request.status === "approved"
+    );
+    if (hasActiveRequests) {
+      return res.status(400).json({ message: "Cannot delete donation with active requests" });
+    }
+
+    await storage.deleteDonation(donation.id);
+    await db
+      .update(userProfiles)
+      .set({ activeDonationsCount: sql`GREATEST(${userProfiles.activeDonationsCount} - 1, 0)` })
+      .where(eq(userProfiles.userId, userId));
+    res.json({ success: true });
   });
 
   app.post("/api/requests", isAuthenticated, async (req: any, res) => {
@@ -178,6 +237,9 @@ export async function registerRoutes(
     if (!donation) return res.status(404).json({ message: "Donation not found" });
     if (donation.donorId === userId) return res.status(400).json({ message: "Cannot request your own donation" });
     if (donation.status !== "active") return res.status(400).json({ message: "Donation is no longer active" });
+
+    const alreadyRequested = await storage.hasExistingRequest(donationId, userId);
+    if (alreadyRequested) return res.status(400).json({ message: "You have already requested this medicine" });
 
     const request = await storage.createRequest({
       donationId,
@@ -393,6 +455,22 @@ export async function registerRoutes(
     const userId = req.user.claims.sub;
     await storage.markAllNotificationsRead(userId);
     res.json({ success: true });
+  });
+
+  app.get("/api/stats/public", async (_req, res) => {
+    const stats = await storage.getPublicStats();
+    res.json(stats);
+  });
+
+  app.patch("/api/auth/user", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const { firstName, lastName, profileImageUrl } = req.body;
+    const updateData: any = { updatedAt: new Date() };
+    if (firstName !== undefined) updateData.firstName = firstName;
+    if (lastName !== undefined) updateData.lastName = lastName;
+    if (profileImageUrl !== undefined) updateData.profileImageUrl = profileImageUrl;
+    const [updated] = await db.update(users).set(updateData).where(eq(users.id, userId)).returning();
+    res.json(updated);
   });
 
   app.get("/api/dashboard", isAuthenticated, async (req: any, res) => {
