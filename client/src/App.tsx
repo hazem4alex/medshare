@@ -21,6 +21,7 @@ import MyRequestsPage from "@/pages/my-requests";
 import RequestDetailPage from "@/pages/request-detail";
 import AdminPage from "@/pages/admin";
 import ProfilePage from "@/pages/profile";
+import AboutPage from "@/pages/about";
 import type { UserProfile } from "@shared/schema";
 import { useEffect } from "react";
 
@@ -35,6 +36,7 @@ function AuthenticatedRouter() {
       <Route path="/requests/:id" component={RequestDetailPage} />
       <Route path="/admin" component={AdminPage} />
       <Route path="/profile" component={ProfilePage} />
+      <Route path="/about" component={AboutPage} />
       <Route component={NotFound} />
     </Switch>
   );

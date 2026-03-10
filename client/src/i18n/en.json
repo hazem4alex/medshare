@@ -14,6 +14,7 @@
     "myRequests": "My Requests",
     "admin": "Admin Panel",
     "profile": "Profile",
+    "about": "About",
     "logout": "Log Out",
     "login": "Log In"
   },
@@ -239,5 +240,30 @@
     "boxes": "Boxes",
     "strips": "Strips",
     "pills": "Pills"
+  },
+  "about": {
+    "title": "About MedShare",
+    "subtitle": "Learn more about our mission, FAQs, and the team behind the platform.",
+    "missionTitle": "Our Mission",
+    "mission1": "MedShare is a free, community-driven platform for the Arab world that connects people who have surplus household medicines with those who need them.",
+    "mission2": "All donations are completely charitable — the platform is strictly for non-commercial, humanitarian use. We believe no medicine should go to waste while someone nearby is unable to afford it.",
+    "mission3": "We rely on community trust, expiry date checks, admin oversight, and delivery confirmation to ensure safety for all users.",
+    "faqTitle": "Frequently Asked Questions",
+    "faq1q": "Who can use MedShare?",
+    "faq1a": "Anyone can register and use MedShare to donate surplus household medicines or request medicines they need — completely free of charge.",
+    "faq2q": "How does the request process work?",
+    "faq2a": "You browse available donations, request the one you need, and the donor can approve or reject your request. Once approved, you arrange delivery directly. The donor then confirms delivery to close the request.",
+    "faq3q": "Is it safe to donate or receive medicines?",
+    "faq3a": "All donations must include an expiry date, and expired medicines cannot be listed. Recipients should always inspect packaging before use. This platform does not substitute professional medical advice.",
+    "faq4q": "Can I sell medicines through MedShare?",
+    "faq4a": "Absolutely not. MedShare is strictly for charitable, non-commercial sharing. Selling medicines through the platform is prohibited and will result in account removal.",
+    "faq5q": "Why do some donations get flagged for admin review?",
+    "faq5a": "Our system automatically flags donations with unrecognized medicine names to ensure quality and safety. Admins review these before they become visible to other users.",
+    "faq6q": "How is my data handled?",
+    "faq6a": "We only store information needed to operate the platform (your name, email, location preference). We do not sell or share your data with third parties.",
+    "feedbackTitle": "Share Your Feedback",
+    "feedbackDesc": "Have a suggestion, found a bug, or want to share an idea? We'd love to hear from you. Reach us at:",
+    "developerTitle": "About the Developer",
+    "developerRole": "Software Engineer"
   }
 }

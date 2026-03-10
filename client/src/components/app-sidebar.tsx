@@ -17,7 +17,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, Search, HeartHandshake, Package, ClipboardList, Shield, LogOut, User } from "lucide-react";
+import { Home, Search, HeartHandshake, Package, ClipboardList, Shield, LogOut, User, Info } from "lucide-react";
 import type { UserProfile } from "@shared/schema";
 
 export function AppSidebar() {
@@ -39,6 +39,7 @@ export function AppSidebar() {
     { title: t("nav.myDonations"), url: "/my-donations", icon: Package },
     { title: t("nav.myRequests"), url: "/my-requests", icon: ClipboardList },
     { title: t("nav.profile"), url: "/profile", icon: User },
+    { title: t("nav.about"), url: "/about", icon: Info },
   ];
 
   if (profile?.isAdmin) {
