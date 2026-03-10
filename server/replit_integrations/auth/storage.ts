@@ -24,7 +24,11 @@ class AuthStorage implements IAuthStorage {
       const [user] = await db
         .update(users)
         .set({
-          ...userData,
+          email: userData.email,
+          profileImageUrl: userData.profileImageUrl,
+          // Only fill in names from auth if the user hasn't set them yet
+          ...(!existingUser.firstName && { firstName: userData.firstName }),
+          ...(!existingUser.lastName && { lastName: userData.lastName }),
           updatedAt: new Date(),
         })
         .where(eq(users.id, existingUser.id))
@@ -51,7 +55,8 @@ class AuthStorage implements IAuthStorage {
       .onConflictDoUpdate({
         target: users.id,
         set: {
-          ...userData,
+          email: userData.email,
+          profileImageUrl: userData.profileImageUrl,
           updatedAt: new Date(),
         },
       })
