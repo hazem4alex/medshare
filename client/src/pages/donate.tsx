@@ -17,13 +17,68 @@ import type { MedicineCategory } from "@shared/schema";
 
 const ARABIC_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
 
-function cleanOcrText(raw: string): string {
-  return raw
-    .split(/\n/)
-    .map(l => l.trim())
-    .filter(l => l.length > 2 && /[a-zA-Z\u0600-\u06FF]/.test(l))
-    .filter(l => !/^\d+(\.\d+)?(mg|ml|mcg|iu|%|g\b)/i.test(l))
-    .slice(0, 3)
+async function preprocessImageForOcr(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const MAX_DIM = 1600;
+      let { width, height } = img;
+      if (width > MAX_DIM || height > MAX_DIM) {
+        const scale = MAX_DIM / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+      const imageData = ctx.getImageData(0, 0, width, height);
+      const data = imageData.data;
+
+      // Convert to grayscale
+      const gray = new Uint8Array(width * height);
+      for (let i = 0; i < gray.length; i++) {
+        const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2];
+        gray[i] = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+      }
+
+      // Contrast stretching: remap min–max to 0–255
+      let min = 255, max = 0;
+      for (const v of gray) { if (v < min) min = v; if (v > max) max = v; }
+      const range = max - min || 1;
+
+      // Apply threshold at midpoint of the stretched range
+      for (let i = 0; i < gray.length; i++) {
+        const stretched = Math.round(((gray[i] - min) / range) * 255);
+        const binary = stretched > 128 ? 255 : 0;
+        data[i * 4] = data[i * 4 + 1] = data[i * 4 + 2] = binary;
+        data[i * 4 + 3] = 255;
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("Canvas toBlob failed"));
+      }, "image/png");
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Image load failed")); };
+    img.src = url;
+  });
+}
+
+const NO_VOWELS = /^[^aeiouAEIOU]{1,3}$/;
+const NOISE_PATTERNS = /^[\d\W]+$|^[^a-zA-Z]+$/;
+
+function extractConfidentWords(words: Array<{ text: string; confidence: number }>): string {
+  return words
+    .filter(w => w.confidence >= 55)
+    .map(w => w.text.trim().replace(/[^a-zA-Z0-9\-]/g, ""))
+    .filter(w => w.length >= 3)
+    .filter(w => !NOISE_PATTERNS.test(w))
+    .filter(w => !NO_VOWELS.test(w))
     .join(" ")
     .trim();
 }
@@ -177,22 +232,26 @@ export default function DonatePage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
 
     setIsScanning(true);
-    setScanProgress(t("donate.scanningEn"));
+    setScanProgress(t("donate.scanningPreprocess"));
 
     try {
-      const Tesseract = await import("tesseract.js");
-      const result = await Tesseract.recognize(file, "eng", { logger: () => {} });
-      const rawEn = result.data.text || "";
-      const cleanEn = cleanOcrText(rawEn);
+      const processedBlob = await preprocessImageForOcr(file);
 
-      if (!cleanEn) {
+      setScanProgress(t("donate.scanningEn"));
+
+      const Tesseract = await import("tesseract.js");
+      const result = await Tesseract.recognize(processedBlob, "eng", { logger: () => {} });
+
+      const extracted = extractConfidentWords(result.data.words as Array<{ text: string; confidence: number }>);
+
+      if (!extracted) {
         toast({ title: t("donate.scanNoText"), variant: "destructive" });
         return;
       }
 
-      setEditedEn(cleanEn);
-      setEditedAr(cleanEn);
-      setOcrPreview({ en: cleanEn, ar: cleanEn });
+      setEditedEn(extracted);
+      setEditedAr(extracted);
+      setOcrPreview({ en: extracted, ar: extracted });
     } catch (err) {
       console.error("OCR error:", err);
       toast({ title: t("common.error"), description: t("donate.scanError"), variant: "destructive" });
@@ -263,7 +322,7 @@ export default function DonatePage() {
           <CardContent className="space-y-5">
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-2 flex-wrap">
-                <p className="text-sm text-muted-foreground">{t("donate.scanEnHint")}</p>
+                <p className="text-sm text-muted-foreground">{t("donate.scanTip")}</p>
                 <div>
                   <input
                     ref={fileInputRef}
