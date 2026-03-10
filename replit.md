@@ -50,6 +50,7 @@ Preferred communication style: Simple, everyday language.
 - Max 10 active donations per user (`MAX_ACTIVE_DONATIONS`)
 - Expired medicines are rejected at donation creation and hidden from browse results
 - Donations are filtered by the requesting user's registered country
+- Medicine name validation: OpenFDA drug database autocomplete on English name field; unrecognized names show a warning and are auto-flagged for admin review
 - Duplicate request prevention: users cannot submit a second non-rejected request for the same donation
 - Donation edit/delete: owners can edit active donations (name, notes, location) and delete them if no pending/approved requests exist
 - Dashboard `totalDonated` counts only completed donations

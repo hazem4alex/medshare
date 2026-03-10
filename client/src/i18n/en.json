@@ -110,7 +110,9 @@
     "scanning": "Scanning...",
     "scanSuccess": "Medicine name detected and filled in!",
     "scanNoText": "No text detected in the image. Try a clearer photo.",
-    "scanError": "Could not process the image. Please try again."
+    "scanError": "Could not process the image. Please try again.",
+    "unrecognizedWarning": "This medicine name was not found in the drug database. Please double-check the name.",
+    "suggestions": "Suggestions"
   },
   "browse": {
     "title": "Browse Medicines",

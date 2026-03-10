@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
-import { Plus, Trash2, HeartHandshake, Camera, Loader2 } from "lucide-react";
+import { Plus, Trash2, HeartHandshake, Camera, Loader2, AlertTriangle } from "lucide-react";
 import type { MedicineCategory } from "@shared/schema";
 
 const ARABIC_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
@@ -20,19 +20,122 @@ function separateText(text: string): { en: string; ar: string } {
   const lines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
   const arParts: string[] = [];
   const enParts: string[] = [];
-
   for (const line of lines) {
-    if (ARABIC_REGEX.test(line)) {
-      arParts.push(line);
-    } else if (/[a-zA-Z]/.test(line)) {
-      enParts.push(line);
-    }
+    if (ARABIC_REGEX.test(line)) arParts.push(line);
+    else if (/[a-zA-Z]/.test(line)) enParts.push(line);
   }
+  return { en: enParts.join(" ").trim(), ar: arParts.join(" ").trim() };
+}
 
-  return {
-    en: enParts.join(" ").trim(),
-    ar: arParts.join(" ").trim(),
-  };
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
+
+function MedicineAutocomplete({
+  value,
+  onChange,
+  dir,
+  testId,
+  label,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  dir?: string;
+  testId: string;
+  label: string;
+}) {
+  const { t } = useTranslation();
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [validated, setValidated] = useState<boolean | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const debouncedValue = useDebounce(value, 400);
+
+  const { data: suggestions } = useQuery<string[]>({
+    queryKey: [`/api/medicines/search?q=${encodeURIComponent(debouncedValue)}`],
+    enabled: debouncedValue.length >= 2 && !ARABIC_REGEX.test(debouncedValue),
+    staleTime: 60000,
+  });
+
+  useEffect(() => {
+    if (!debouncedValue || debouncedValue.length < 2 || ARABIC_REGEX.test(debouncedValue)) {
+      setValidated(null);
+      return;
+    }
+    if (suggestions !== undefined) {
+      const normalized = debouncedValue.toLowerCase().replace(/[^a-z0-9\s]/g, "");
+      const found = suggestions.some((s) => {
+        const sNorm = s.toLowerCase();
+        return sNorm.includes(normalized) || normalized.includes(sNorm);
+      });
+      setValidated(found);
+    }
+  }, [suggestions, debouncedValue]);
+
+  useEffect(() => {
+    if (suggestions && suggestions.length > 0 && value.length >= 2) {
+      setShowDropdown(true);
+    }
+  }, [suggestions, value]);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  return (
+    <div className="space-y-2" ref={wrapperRef}>
+      <Label>{label}</Label>
+      <div className="relative">
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onFocus={() => {
+            if (suggestions && suggestions.length > 0 && value.length >= 2) setShowDropdown(true);
+          }}
+          dir={dir}
+          data-testid={testId}
+        />
+        {showDropdown && suggestions && suggestions.length > 0 && (
+          <div className="absolute z-50 top-full mt-1 w-full bg-popover border rounded-md shadow-lg max-h-48 overflow-auto">
+            <div className="px-3 py-1.5 text-xs text-muted-foreground font-medium border-b">
+              {t("donate.suggestions")}
+            </div>
+            {suggestions.map((name, i) => (
+              <button
+                key={i}
+                type="button"
+                className="w-full text-start px-3 py-2 text-sm hover:bg-accent cursor-pointer"
+                onClick={() => {
+                  onChange(name);
+                  setShowDropdown(false);
+                  setValidated(true);
+                }}
+                data-testid={`suggestion-${i}`}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      {validated === false && value.length >= 2 && (
+        <p className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400" data-testid="text-unrecognized-warning">
+          <AlertTriangle className="h-3 w-3 shrink-0" />
+          {t("donate.unrecognizedWarning")}
+        </p>
+      )}
+    </div>
+  );
 }
 
 export default function DonatePage() {
@@ -70,38 +173,26 @@ export default function DonatePage() {
   const handleScanImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setIsScanning(true);
     try {
       const Tesseract = await import("tesseract.js");
-      const result = await Tesseract.recognize(file, "eng+ara", {
-        logger: () => {},
-      });
-
+      const result = await Tesseract.recognize(file, "eng+ara", { logger: () => {} });
       const detectedText = result.data.text?.trim();
       if (!detectedText) {
         toast({ title: t("donate.scanNoText"), variant: "destructive" });
         return;
       }
-
       const { en, ar } = separateText(detectedText);
-
       if (en) setMedicineNameEn(en);
       if (ar) setMedicineNameAr(ar);
-
-      if (!en && !ar) {
-        setMedicineNameEn(detectedText);
-      }
-
+      if (!en && !ar) setMedicineNameEn(detectedText);
       toast({ title: t("donate.scanSuccess") });
     } catch (err) {
       console.error("OCR error:", err);
       toast({ title: t("common.error"), description: t("donate.scanError"), variant: "destructive" });
     } finally {
       setIsScanning(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -133,13 +224,11 @@ export default function DonatePage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if ((!medicineNameEn && !medicineNameAr) || !expiryDate || quantities.length === 0) return;
-
     const expiry = new Date(expiryDate);
     if (expiry <= new Date()) {
       toast({ title: t("donate.expiredError"), variant: "destructive" });
       return;
     }
-
     submitMutation.mutate();
   };
 
@@ -191,14 +280,12 @@ export default function DonatePage() {
                 </div>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>{t("donate.medicineNameEn")}</Label>
-                  <Input
-                    value={medicineNameEn}
-                    onChange={(e) => setMedicineNameEn(e.target.value)}
-                    data-testid="input-medicine-name-en"
-                  />
-                </div>
+                <MedicineAutocomplete
+                  value={medicineNameEn}
+                  onChange={setMedicineNameEn}
+                  testId="input-medicine-name-en"
+                  label={t("donate.medicineNameEn")}
+                />
                 <div className="space-y-2">
                   <Label>{t("donate.medicineNameAr")}</Label>
                   <Input

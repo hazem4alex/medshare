@@ -89,6 +89,33 @@ export async function registerRoutes(
     res.json({ success: true });
   });
 
+  app.get("/api/medicines/search", isAuthenticated, async (req: any, res) => {
+    const query = (req.query.q as string || "").trim().toLowerCase();
+    if (query.length < 2) return res.json([]);
+
+    try {
+      const url = `https://api.fda.gov/drug/label.json?search=(openfda.brand_name:${encodeURIComponent(query)}*)+OR+(openfda.generic_name:${encodeURIComponent(query)}*)&limit=10`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        return res.json([]);
+      }
+      const data = await response.json();
+      const names = new Set<string>();
+      for (const result of data.results || []) {
+        const brandNames = result.openfda?.brand_name || [];
+        const genericNames = result.openfda?.generic_name || [];
+        for (const name of [...brandNames, ...genericNames]) {
+          if (name.toLowerCase().includes(query)) {
+            names.add(name);
+          }
+        }
+      }
+      res.json([...names].slice(0, 15));
+    } catch {
+      res.json([]);
+    }
+  });
+
   app.post("/api/donations", isAuthenticated, async (req: any, res) => {
     const userId = req.user.claims.sub;
     const profile = await storage.getUserProfile(userId);
@@ -136,6 +163,33 @@ export async function registerRoutes(
       governorateId: profile.governorateId,
       areaId: profile.areaId,
     });
+
+    if (medicineNameEn && medicineNameEn.length >= 2) {
+      try {
+        const normalized = medicineNameEn.trim().toLowerCase().replace(/[^a-z0-9\s]/g, "");
+        const fdaUrl = `https://api.fda.gov/drug/label.json?search=(openfda.brand_name:${encodeURIComponent(normalized)}*)+OR+(openfda.generic_name:${encodeURIComponent(normalized)}*)&limit=5`;
+        const fdaRes = await fetch(fdaUrl);
+        if (fdaRes.ok) {
+          const fdaData = await fdaRes.json();
+          const allNames: string[] = [];
+          for (const r of fdaData.results || []) {
+            allNames.push(...(r.openfda?.brand_name || []), ...(r.openfda?.generic_name || []));
+          }
+          const isRecognized = allNames.some(n => n.toLowerCase().includes(normalized) || normalized.includes(n.toLowerCase()));
+          if (!isRecognized) {
+            await storage.createAdminFlag({
+              flaggedUserId: userId,
+              reason: `Unrecognized medicine name: "${medicineNameEn}"`,
+              relatedDonationId: donation.id,
+              relatedRequestId: null,
+              reviewed: false,
+              reviewedBy: null,
+            });
+          }
+        }
+      } catch {}
+    }
+
     res.json(donation);
   });
 
