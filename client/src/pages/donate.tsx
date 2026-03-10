@@ -3,28 +3,29 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
-import { Plus, Trash2, HeartHandshake, Camera, Loader2, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, HeartHandshake, Camera, Loader2, AlertTriangle, CheckCircle } from "lucide-react";
 import type { MedicineCategory } from "@shared/schema";
 
 const ARABIC_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
 
-function separateText(text: string): { en: string; ar: string } {
-  const lines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
-  const arParts: string[] = [];
-  const enParts: string[] = [];
-  for (const line of lines) {
-    if (ARABIC_REGEX.test(line)) arParts.push(line);
-    else if (/[a-zA-Z]/.test(line)) enParts.push(line);
-  }
-  return { en: enParts.join(" ").trim(), ar: arParts.join(" ").trim() };
+function cleanOcrText(raw: string): string {
+  return raw
+    .split(/\n/)
+    .map(l => l.trim())
+    .filter(l => l.length > 2 && /[a-zA-Z\u0600-\u06FF]/.test(l))
+    .filter(l => !/^\d+(\.\d+)?(mg|ml|mcg|iu|%|g\b)/i.test(l))
+    .slice(0, 3)
+    .join(" ")
+    .trim();
 }
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -151,19 +152,19 @@ export default function DonatePage() {
   const [locationDescription, setLocationDescription] = useState("");
   const [locationCoords, setLocationCoords] = useState("");
   const [notes, setNotes] = useState("");
+
   const [isScanning, setIsScanning] = useState(false);
+  const [scanProgress, setScanProgress] = useState("");
+  const [ocrPreview, setOcrPreview] = useState<{ en: string; ar: string } | null>(null);
+  const [editedEn, setEditedEn] = useState("");
+  const [editedAr, setEditedAr] = useState("");
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: categories } = useQuery<MedicineCategory[]>({ queryKey: ["/api/categories"] });
 
-  const addQuantity = () => {
-    setQuantities([...quantities, { unit: "box", quantity: 1 }]);
-  };
-
-  const removeQuantity = (idx: number) => {
-    setQuantities(quantities.filter((_, i) => i !== idx));
-  };
-
+  const addQuantity = () => setQuantities([...quantities, { unit: "box", quantity: 1 }]);
+  const removeQuantity = (idx: number) => setQuantities(quantities.filter((_, i) => i !== idx));
   const updateQuantity = (idx: number, field: string, value: any) => {
     const updated = [...quantities];
     (updated[idx] as any)[field] = field === "quantity" ? Number(value) : value;
@@ -173,27 +174,48 @@ export default function DonatePage() {
   const handleScanImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
     setIsScanning(true);
+    setScanProgress(t("donate.scanningEn"));
+
     try {
       const Tesseract = await import("tesseract.js");
-      const result = await Tesseract.recognize(file, "eng+ara", { logger: () => {} });
-      const detectedText = result.data.text?.trim();
-      if (!detectedText) {
+
+      const [engResult, araResult] = await Promise.all([
+        Tesseract.recognize(file, "eng", { logger: () => {} }),
+        Tesseract.recognize(file, "ara", { logger: () => {} }),
+      ]);
+
+      setScanProgress(t("donate.scanningAr"));
+
+      const rawEn = engResult.data.text || "";
+      const rawAr = araResult.data.text || "";
+
+      const cleanEn = cleanOcrText(rawEn);
+      const cleanAr = cleanOcrText(rawAr);
+
+      if (!cleanEn && !cleanAr) {
         toast({ title: t("donate.scanNoText"), variant: "destructive" });
         return;
       }
-      const { en, ar } = separateText(detectedText);
-      if (en) setMedicineNameEn(en);
-      if (ar) setMedicineNameAr(ar);
-      if (!en && !ar) setMedicineNameEn(detectedText);
-      toast({ title: t("donate.scanSuccess") });
+
+      setEditedEn(cleanEn);
+      setEditedAr(cleanAr);
+      setOcrPreview({ en: cleanEn, ar: cleanAr });
     } catch (err) {
       console.error("OCR error:", err);
       toast({ title: t("common.error"), description: t("donate.scanError"), variant: "destructive" });
     } finally {
       setIsScanning(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      setScanProgress("");
     }
+  };
+
+  const applyOcrResults = () => {
+    if (editedEn) setMedicineNameEn(editedEn);
+    if (editedAr) setMedicineNameAr(editedAr);
+    setOcrPreview(null);
   };
 
   const submitMutation = useMutation({
@@ -275,7 +297,7 @@ export default function DonatePage() {
                     ) : (
                       <Camera className="h-3.5 w-3.5 me-1.5" />
                     )}
-                    {isScanning ? t("donate.scanning") : t("donate.scanName")}
+                    {isScanning ? (scanProgress || t("donate.scanning")) : t("donate.scanName")}
                   </Button>
                 </div>
               </div>
@@ -415,6 +437,52 @@ export default function DonatePage() {
       </form>
 
       <MedicalDisclaimer />
+
+      <Dialog open={!!ocrPreview} onOpenChange={() => setOcrPreview(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Camera className="h-4 w-4" />
+              {t("donate.scanPreviewTitle")}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">{t("donate.scanPreviewDesc")}</p>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t("donate.medicineNameEn")}</Label>
+              <Input
+                value={editedEn}
+                onChange={(e) => setEditedEn(e.target.value)}
+                placeholder={t("donate.scanNoTextPlaceholder")}
+                data-testid="input-ocr-en"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("donate.medicineNameAr")}</Label>
+              <Input
+                value={editedAr}
+                onChange={(e) => setEditedAr(e.target.value)}
+                dir="rtl"
+                placeholder={t("donate.scanNoTextPlaceholder")}
+                data-testid="input-ocr-ar"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setOcrPreview(null)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              onClick={applyOcrResults}
+              disabled={!editedEn && !editedAr}
+              data-testid="button-apply-ocr"
+            >
+              <CheckCircle className="h-3.5 w-3.5 me-1.5" />
+              {t("donate.scanApply")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
