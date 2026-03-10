@@ -17,7 +17,7 @@ import type { MedicineCategory } from "@shared/schema";
 
 const ARABIC_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
 
-async function preprocessImageForOcr(file: File): Promise<Blob> {
+async function preprocessImageForOcr(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
@@ -33,7 +33,8 @@ async function preprocessImageForOcr(file: File): Promise<Blob> {
       const canvas = document.createElement("canvas");
       canvas.width = width;
       canvas.height = height;
-      const ctx = canvas.getContext("2d")!;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { reject(new Error("Canvas context unavailable")); return; }
       ctx.drawImage(img, 0, 0, width, height);
       const imageData = ctx.getImageData(0, 0, width, height);
       const data = imageData.data;
@@ -59,10 +60,8 @@ async function preprocessImageForOcr(file: File): Promise<Blob> {
       }
 
       ctx.putImageData(imageData, 0, 0);
-      canvas.toBlob((blob) => {
-        if (blob) resolve(blob);
-        else reject(new Error("Canvas toBlob failed"));
-      }, "image/png");
+      // toDataURL is synchronous — always returns a valid string, unlike toBlob
+      resolve(canvas.toDataURL("image/png"));
     };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Image load failed")); };
     img.src = url;
@@ -235,14 +234,22 @@ export default function DonatePage() {
     setScanProgress(t("donate.scanningPreprocess"));
 
     try {
-      const processedBlob = await preprocessImageForOcr(file);
+      const processedDataUrl = await preprocessImageForOcr(file);
 
       setScanProgress(t("donate.scanningEn"));
 
       const Tesseract = await import("tesseract.js");
-      const result = await Tesseract.recognize(processedBlob, "eng", { logger: () => {} });
+      const result = await Tesseract.recognize(processedDataUrl, "eng", { logger: () => {} });
 
-      const extracted = extractConfidentWords(result.data.words as Array<{ text: string; confidence: number }>);
+      const words: Array<{ text: string; confidence: number }> = result.data.words ?? [];
+      const extracted = words.length > 0
+        ? extractConfidentWords(words)
+        : (result.data.text ?? "")
+            .split(/\s+/)
+            .map((w: string) => w.replace(/[^a-zA-Z0-9\-]/g, ""))
+            .filter((w: string) => w.length >= 3 && /[aeiouAEIOU]/.test(w))
+            .join(" ")
+            .trim();
 
       if (!extracted) {
         toast({ title: t("donate.scanNoText"), variant: "destructive" });
