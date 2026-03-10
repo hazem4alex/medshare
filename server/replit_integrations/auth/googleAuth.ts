@@ -22,6 +22,7 @@ export function getSession() {
     cookie: {
       httpOnly: true,
       secure: true,
+      sameSite: "lax",
       maxAge: sessionTtl,
     },
   });
@@ -63,17 +64,33 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/login", passport.authenticate("google", { scope: ["email", "profile"] }));
 
-  app.get(
-    "/api/callback",
-    passport.authenticate("google", {
-      successRedirect: "/",
-      failureRedirect: "/api/login",
-    })
-  );
+  app.get("/api/callback", (req, res, next) => {
+    passport.authenticate("google", (err: any, user: any) => {
+      if (err || !user) {
+        console.error("Google OAuth error:", err);
+        return res.redirect("/api/login");
+      }
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          console.error("Login error:", loginErr);
+          return res.redirect("/api/login");
+        }
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error("Session save error:", saveErr);
+            return res.redirect("/api/login");
+          }
+          res.redirect("/");
+        });
+      });
+    })(req, res, next);
+  });
 
   app.get("/api/logout", (req, res) => {
     req.logout(() => {
-      res.redirect("/");
+      req.session.destroy(() => {
+        res.redirect("/");
+      });
     });
   });
 }

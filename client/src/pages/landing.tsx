@@ -18,12 +18,12 @@ export default function LandingPage() {
             </div>
             <span className="font-semibold text-lg tracking-tight" data-testid="text-app-name">{t("app.name")}</span>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
             <LanguageSwitcher />
             <a href="/api/login">
               <Button data-testid="button-login" className="flex items-center gap-2">
                 <SiGoogle className="h-4 w-4" />
-                {t("auth.loginWithGoogle")}
+                <span className="hidden sm:inline">{t("auth.loginWithGoogle")}</span>
               </Button>
             </a>
           </div>
