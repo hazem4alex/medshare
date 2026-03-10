@@ -119,6 +119,7 @@ Preferred communication style: Simple, everyday language.
 - `i18next` + `react-i18next` + `i18next-browser-languagedetector` — Internationalization
 - `@tanstack/react-query` — Server state management
 - `wouter` — Client-side routing
+- `tesseract.js` — Browser-based OCR for scanning medicine names from photos
 - `date-fns` — Date manipulation (expiry checks)
 - `memoizee` — OIDC config caching
 - `lucide-react` — Icon library

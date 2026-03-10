@@ -105,7 +105,12 @@
     "expiredError": "Cannot donate expired medicines",
     "limitReached": "You have reached the maximum number of active donations",
     "removeQty": "Remove",
-    "nameHint": "At least one name is required (English or Arabic)"
+    "nameHint": "At least one name is required (English or Arabic)",
+    "scanName": "Scan from Photo",
+    "scanning": "Scanning...",
+    "scanSuccess": "Medicine name detected and filled in!",
+    "scanNoText": "No text detected in the image. Try a clearer photo.",
+    "scanError": "Could not process the image. Please try again."
   },
   "browse": {
     "title": "Browse Medicines",

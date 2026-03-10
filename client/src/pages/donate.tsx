@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,8 +11,29 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
-import { Plus, Trash2, HeartHandshake } from "lucide-react";
+import { Plus, Trash2, HeartHandshake, Camera, Loader2 } from "lucide-react";
 import type { MedicineCategory } from "@shared/schema";
+
+const ARABIC_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+
+function separateText(text: string): { en: string; ar: string } {
+  const lines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
+  const arParts: string[] = [];
+  const enParts: string[] = [];
+
+  for (const line of lines) {
+    if (ARABIC_REGEX.test(line)) {
+      arParts.push(line);
+    } else if (/[a-zA-Z]/.test(line)) {
+      enParts.push(line);
+    }
+  }
+
+  return {
+    en: enParts.join(" ").trim(),
+    ar: arParts.join(" ").trim(),
+  };
+}
 
 export default function DonatePage() {
   const { t } = useTranslation();
@@ -27,6 +48,8 @@ export default function DonatePage() {
   const [locationDescription, setLocationDescription] = useState("");
   const [locationCoords, setLocationCoords] = useState("");
   const [notes, setNotes] = useState("");
+  const [isScanning, setIsScanning] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: categories } = useQuery<MedicineCategory[]>({ queryKey: ["/api/categories"] });
 
@@ -42,6 +65,44 @@ export default function DonatePage() {
     const updated = [...quantities];
     (updated[idx] as any)[field] = field === "quantity" ? Number(value) : value;
     setQuantities(updated);
+  };
+
+  const handleScanImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsScanning(true);
+    try {
+      const Tesseract = await import("tesseract.js");
+      const result = await Tesseract.recognize(file, "eng+ara", {
+        logger: () => {},
+      });
+
+      const detectedText = result.data.text?.trim();
+      if (!detectedText) {
+        toast({ title: t("donate.scanNoText"), variant: "destructive" });
+        return;
+      }
+
+      const { en, ar } = separateText(detectedText);
+
+      if (en) setMedicineNameEn(en);
+      if (ar) setMedicineNameAr(ar);
+
+      if (!en && !ar) {
+        setMedicineNameEn(detectedText);
+      }
+
+      toast({ title: t("donate.scanSuccess") });
+    } catch (err) {
+      console.error("OCR error:", err);
+      toast({ title: t("common.error"), description: t("donate.scanError"), variant: "destructive" });
+    } finally {
+      setIsScanning(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
   };
 
   const submitMutation = useMutation({
@@ -100,7 +161,35 @@ export default function DonatePage() {
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">{t("donate.nameHint")}</p>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <p className="text-sm text-muted-foreground">{t("donate.nameHint")}</p>
+                <div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={handleScanImage}
+                    data-testid="input-scan-file"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isScanning}
+                    data-testid="button-scan-medicine"
+                  >
+                    {isScanning ? (
+                      <Loader2 className="h-3.5 w-3.5 me-1.5 animate-spin" />
+                    ) : (
+                      <Camera className="h-3.5 w-3.5 me-1.5" />
+                    )}
+                    {isScanning ? t("donate.scanning") : t("donate.scanName")}
+                  </Button>
+                </div>
+              </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t("donate.medicineNameEn")}</Label>
