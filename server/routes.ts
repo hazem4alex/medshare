@@ -34,13 +34,13 @@ export async function registerRoutes(
   });
 
   app.get("/api/profile", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const profile = await storage.getUserProfile(userId);
     res.json(profile || null);
   });
 
   app.post("/api/profile", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const { countryId, governorateId, areaId, declarationAccepted } = req.body;
 
     if (!declarationAccepted) {
@@ -66,7 +66,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/categories", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const profile = await storage.getUserProfile(userId);
     if (!profile?.isAdmin) {
       return res.status(403).json({ message: "Admin access required" });
@@ -80,7 +80,7 @@ export async function registerRoutes(
   });
 
   app.delete("/api/categories/:id", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const profile = await storage.getUserProfile(userId);
     if (!profile?.isAdmin) {
       return res.status(403).json({ message: "Admin access required" });
@@ -117,7 +117,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/donations", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const profile = await storage.getUserProfile(userId);
     if (!profile) {
       return res.status(400).json({ message: "Please complete your profile first" });
@@ -194,7 +194,7 @@ export async function registerRoutes(
   });
 
   app.get("/api/donations/search", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const profile = await storage.getUserProfile(userId);
 
     const { search, categoryId, governorateId } = req.query;
@@ -208,13 +208,13 @@ export async function registerRoutes(
   });
 
   app.get("/api/donations/mine", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const data = await storage.getDonationsByDonor(userId);
     res.json(data);
   });
 
   app.get("/api/donations/mine/pending-counts", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const counts = await storage.getPendingRequestCountsByDonor(userId);
     res.json(counts);
   });
@@ -226,7 +226,7 @@ export async function registerRoutes(
   });
 
   app.get("/api/donations/:id/requests", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const donation = await storage.getDonation(Number(req.params.id));
     if (!donation) return res.status(404).json({ message: "Donation not found" });
     const profile = await storage.getUserProfile(userId);
@@ -238,7 +238,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/donations/:id", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const donation = await storage.getDonation(Number(req.params.id));
     if (!donation) return res.status(404).json({ message: "Donation not found" });
     if (donation.donorId !== userId) return res.status(403).json({ message: "Access denied" });
@@ -258,7 +258,7 @@ export async function registerRoutes(
   });
 
   app.delete("/api/donations/:id", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const donation = await storage.getDonation(Number(req.params.id));
     if (!donation) return res.status(404).json({ message: "Donation not found" });
     if (donation.donorId !== userId) return res.status(403).json({ message: "Access denied" });
@@ -280,7 +280,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/requests", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const profile = await storage.getUserProfile(userId);
     if (!profile) {
       return res.status(400).json({ message: "Please complete your profile first" });
@@ -316,13 +316,13 @@ export async function registerRoutes(
   });
 
   app.get("/api/requests/mine", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const data = await storage.getRequestsByRequester(userId);
     res.json(data);
   });
 
   app.get("/api/requests/:id", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const data = await storage.getRequest(Number(req.params.id));
     if (!data) return res.status(404).json({ message: "Request not found" });
     if (data.request.requesterId !== userId && data.donation?.donorId !== userId) {
@@ -332,7 +332,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/requests/:id/status", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const requestId = Number(req.params.id);
     const { status, deliveryDate, deliveryTime } = req.body;
     const requestData = await storage.getRequest(requestId);
@@ -374,7 +374,7 @@ export async function registerRoutes(
   });
 
   app.get("/api/requests/:id/messages", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const reqData = await storage.getRequest(Number(req.params.id));
     if (!reqData) return res.status(404).json({ message: "Request not found" });
     if (reqData.request.requesterId !== userId && reqData.donation?.donorId !== userId) {
@@ -385,7 +385,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/requests/:id/messages", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const { content } = req.body;
     if (!content?.trim()) return res.status(400).json({ message: "Message content is required" });
     const reqData = await storage.getRequest(Number(req.params.id));
@@ -428,7 +428,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/delivery/:requestId/confirm", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const requestId = Number(req.params.requestId);
     const { quantities, role } = req.body;
 
@@ -488,25 +488,25 @@ export async function registerRoutes(
   });
 
   app.get("/api/notifications", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const data = await storage.getNotificationsByUser(userId);
     res.json(data);
   });
 
   app.get("/api/notifications/unread-count", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const count = await storage.getUnreadNotificationCount(userId);
     res.json({ count });
   });
 
   app.patch("/api/notifications/:id/read", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     await storage.markNotificationRead(Number(req.params.id), userId);
     res.json({ success: true });
   });
 
   app.post("/api/notifications/mark-all-read", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     await storage.markAllNotificationsRead(userId);
     res.json({ success: true });
   });
@@ -517,7 +517,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/auth/user", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const { firstName, lastName, profileImageUrl } = req.body;
     const updateData: any = { updatedAt: new Date() };
     if (firstName !== undefined) updateData.firstName = firstName;
@@ -528,13 +528,13 @@ export async function registerRoutes(
   });
 
   app.get("/api/dashboard", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const stats = await storage.getDashboardStats(userId);
     res.json(stats);
   });
 
   app.get("/api/admin/flags", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const profile = await storage.getUserProfile(userId);
     if (!profile?.isAdmin) return res.status(403).json({ message: "Admin access required" });
     const data = await storage.getAdminFlags();
@@ -542,7 +542,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/admin/flags/:id", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = (req.user as any).id;
     const profile = await storage.getUserProfile(userId);
     if (!profile?.isAdmin) return res.status(403).json({ message: "Admin access required" });
     await storage.markFlagReviewed(Number(req.params.id), userId);
