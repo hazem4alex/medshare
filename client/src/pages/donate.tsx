@@ -181,28 +181,18 @@ export default function DonatePage() {
 
     try {
       const Tesseract = await import("tesseract.js");
-
-      const [engResult, araResult] = await Promise.all([
-        Tesseract.recognize(file, "eng", { logger: () => {} }),
-        Tesseract.recognize(file, "ara", { logger: () => {} }),
-      ]);
-
-      setScanProgress(t("donate.scanningAr"));
-
-      const rawEn = engResult.data.text || "";
-      const rawAr = araResult.data.text || "";
-
+      const result = await Tesseract.recognize(file, "eng", { logger: () => {} });
+      const rawEn = result.data.text || "";
       const cleanEn = cleanOcrText(rawEn);
-      const cleanAr = cleanOcrText(rawAr);
 
-      if (!cleanEn && !cleanAr) {
+      if (!cleanEn) {
         toast({ title: t("donate.scanNoText"), variant: "destructive" });
         return;
       }
 
       setEditedEn(cleanEn);
-      setEditedAr(cleanAr);
-      setOcrPreview({ en: cleanEn, ar: cleanAr });
+      setEditedAr(cleanEn);
+      setOcrPreview({ en: cleanEn, ar: cleanEn });
     } catch (err) {
       console.error("OCR error:", err);
       toast({ title: t("common.error"), description: t("donate.scanError"), variant: "destructive" });
@@ -273,7 +263,7 @@ export default function DonatePage() {
           <CardContent className="space-y-5">
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-2 flex-wrap">
-                <p className="text-sm text-muted-foreground">{t("donate.nameHint")}</p>
+                <p className="text-sm text-muted-foreground">{t("donate.scanEnHint")}</p>
                 <div>
                   <input
                     ref={fileInputRef}
