@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { HeartHandshake, Shield, PackageCheck, Users, ArrowRight, Heart } from "lucide-react";
+import { SiGoogle } from "react-icons/si";
 
 export default function LandingPage() {
   const { t } = useTranslation();
@@ -20,7 +21,10 @@ export default function LandingPage() {
           <div className="flex items-center gap-2 flex-wrap">
             <LanguageSwitcher />
             <a href="/api/login">
-              <Button data-testid="button-login">{t("nav.login")}</Button>
+              <Button data-testid="button-login" className="flex items-center gap-2">
+                <SiGoogle className="h-4 w-4" />
+                {t("auth.loginWithGoogle")}
+              </Button>
             </a>
           </div>
         </div>
@@ -43,9 +47,10 @@ export default function LandingPage() {
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <a href="/api/login">
-                  <Button size="lg" data-testid="button-get-started">
-                    {t("landing.getStarted")}
-                    <ArrowRight className="h-4 w-4 ms-2" />
+                  <Button size="lg" data-testid="button-get-started" className="flex items-center gap-2">
+                    <SiGoogle className="h-4 w-4" />
+                    {t("auth.loginWithGoogle")}
+                    <ArrowRight className="h-4 w-4 ms-1" />
                   </Button>
                 </a>
               </div>

@@ -39,7 +39,7 @@
   "auth": {
     "welcome": "مرحباً بعودتك",
     "loginToAccess": "سجّل الدخول للوصول إلى ميدشير",
-    "loginWithReplit": "تسجيل الدخول عبر Replit"
+    "loginWithGoogle": "المتابعة عبر Google"
   },
   "profile": {
     "setup": "أكمل ملفك الشخصي",

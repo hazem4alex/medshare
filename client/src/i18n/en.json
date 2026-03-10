@@ -39,7 +39,7 @@
   "auth": {
     "welcome": "Welcome back",
     "loginToAccess": "Log in to access MedShare",
-    "loginWithReplit": "Log In with Replit"
+    "loginWithGoogle": "Continue with Google"
   },
   "profile": {
     "setup": "Complete Your Profile",
