@@ -393,15 +393,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAdminFlags(): Promise<any[]> {
-    return db
-      .select({
-        flag: adminFlags,
-        flaggedUserFirstName: users.firstName,
-        flaggedUserLastName: users.lastName,
-      })
-      .from(adminFlags)
-      .leftJoin(users, eq(adminFlags.flaggedUserId, users.id))
-      .orderBy(desc(adminFlags.createdAt));
+    const rows = await db.execute(sql`
+      SELECT
+        af.*,
+        fu.first_name  AS flagged_user_first_name,
+        fu.last_name   AS flagged_user_last_name,
+        ru.first_name  AS reporter_first_name,
+        ru.last_name   AS reporter_last_name,
+        d.medicine_name_en,
+        d.medicine_name_ar
+      FROM admin_flags af
+      LEFT JOIN users fu ON af.flagged_user_id = fu.id
+      LEFT JOIN users ru ON af.reported_by = ru.id
+      LEFT JOIN donations d ON af.related_donation_id = d.id
+      ORDER BY af.created_at DESC
+    `);
+    return rows.rows;
   }
 
   async markFlagReviewed(id: number, reviewedBy: string): Promise<void> {

@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MedicalDisclaimer } from "@/components/medical-disclaimer";
-import { Search, MapPin, Calendar, AlertTriangle, Package, CheckCircle } from "lucide-react";
+import { Search, MapPin, Calendar, AlertTriangle, Package, CheckCircle, Flag } from "lucide-react";
+import { ReportDialog } from "@/components/report-dialog";
 import type { MedicineCategory } from "@shared/schema";
 
 function isNearExpiry(expiryDate: string): boolean {
@@ -31,6 +32,7 @@ export default function BrowsePage() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [selectedDonation, setSelectedDonation] = useState<any>(null);
   const [requestQuantities, setRequestQuantities] = useState<Array<{ unit: string; quantity: number }>>([]);
+  const [reportTarget, setReportTarget] = useState<{ donationId?: number; flaggedUserId?: string; medicineName?: string } | null>(null);
 
   const { data: categories } = useQuery<MedicineCategory[]>({ queryKey: ["/api/categories"] });
 
@@ -197,20 +199,32 @@ export default function BrowsePage() {
                     <span className="text-xs text-muted-foreground">
                       {t("browse.donatedBy")}: {item.donorFirstName} {item.donorLastName?.[0]}.
                     </span>
-                    {alreadyRequested ? (
-                      <Badge variant="secondary" className="flex items-center gap-1">
-                        <CheckCircle className="h-3 w-3" />
-                        {t("browse.alreadyRequested")}
-                      </Badge>
-                    ) : (
+                    <div className="flex items-center gap-1.5">
                       <Button
-                        size="sm"
-                        onClick={() => openRequestDialog(item)}
-                        data-testid={`button-request-${d.id}`}
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        title={t("report.reportMedicine")}
+                        onClick={() => setReportTarget({ donationId: d.id, flaggedUserId: d.donorId, medicineName: isAr ? d.medicineNameAr || d.medicineNameEn : d.medicineNameEn })}
+                        data-testid={`button-report-${d.id}`}
                       >
-                        {t("browse.requestMedicine")}
+                        <Flag className="h-3.5 w-3.5" />
                       </Button>
-                    )}
+                      {alreadyRequested ? (
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3" />
+                          {t("browse.alreadyRequested")}
+                        </Badge>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => openRequestDialog(item)}
+                          data-testid={`button-request-${d.id}`}
+                        >
+                          {t("browse.requestMedicine")}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -275,6 +289,14 @@ export default function BrowsePage() {
       </Dialog>
 
       <MedicalDisclaimer />
+
+      <ReportDialog
+        open={!!reportTarget}
+        onClose={() => setReportTarget(null)}
+        donationId={reportTarget?.donationId}
+        flaggedUserId={reportTarget?.flaggedUserId}
+        medicineName={reportTarget?.medicineName}
+      />
     </div>
   );
 }

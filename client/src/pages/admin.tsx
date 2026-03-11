@@ -163,28 +163,48 @@ export default function AdminPage() {
           ) : (
             <div className="space-y-3">
               {flags.map((item: any) => (
-                <Card key={item.flag.id} data-testid={`flag-${item.flag.id}`}>
+                <Card key={item.id} data-testid={`flag-${item.id}`}>
                   <CardContent className="p-4 space-y-2">
                     <div className="flex items-start justify-between gap-2 flex-wrap">
-                      <div>
-                        <p className="text-sm font-medium">{item.flag.reason}</p>
-                        {item.flaggedUserFirstName && (
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {item.report_type && item.report_type !== "system" && (
+                            <Badge variant="outline" className="text-xs capitalize">
+                              {item.report_type.replace(/_/g, " ")}
+                            </Badge>
+                          )}
+                          {item.report_type === "system" && (
+                            <Badge variant="outline" className="text-xs">system</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm font-medium">{item.reason}</p>
+                        {item.medicine_name_en && (
                           <p className="text-xs text-muted-foreground">
-                            User: {item.flaggedUserFirstName} {item.flaggedUserLastName}
+                            Medicine: {item.medicine_name_en}
+                          </p>
+                        )}
+                        {item.flagged_user_first_name && (
+                          <p className="text-xs text-muted-foreground">
+                            Flagged user: {item.flagged_user_first_name} {item.flagged_user_last_name}
+                          </p>
+                        )}
+                        {item.reporter_first_name && (
+                          <p className="text-xs text-muted-foreground">
+                            Reported by: {item.reporter_first_name} {item.reporter_last_name}
                           </p>
                         )}
                         <p className="text-xs text-muted-foreground">
-                          {new Date(item.flag.createdAt).toLocaleString()}
+                          {new Date(item.created_at).toLocaleString()}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {item.flag.reviewed ? (
+                      <div className="flex items-center gap-2 shrink-0">
+                        {item.reviewed ? (
                           <Badge variant="secondary">Reviewed</Badge>
                         ) : (
                           <Button
                             size="sm"
-                            onClick={() => reviewFlagMutation.mutate(item.flag.id)}
-                            data-testid={`button-review-${item.flag.id}`}
+                            onClick={() => reviewFlagMutation.mutate(item.id)}
+                            data-testid={`button-review-${item.id}`}
                           >
                             <Check className="h-3 w-3 me-1" />
                             {t("admin.markReviewed")}

@@ -244,6 +244,26 @@
     "strips": "Strips",
     "pills": "Pills"
   },
+  "report": {
+    "title": "Report",
+    "subtitle": "Submit a report to platform admins for review.",
+    "typeLabel": "Report Type",
+    "typeSuspiciousMedicine": "Suspicious or illegal medicine",
+    "typeSuspiciousUser": "Suspicious user behavior",
+    "typeCounterfeit": "Counterfeit or unidentified medicine",
+    "typeNarcotic": "Controlled or narcotic drug",
+    "typeExpired": "Expired medicine listed",
+    "typeOther": "Other",
+    "reasonLabel": "Details",
+    "reasonPlaceholder": "Describe what seems suspicious or illegal...",
+    "submit": "Submit Report",
+    "success": "Report submitted. Admins will review it shortly.",
+    "error": "Failed to submit report. Please try again.",
+    "reportMedicine": "Report this medicine",
+    "reportUser": "Report this user",
+    "reportedBy": "Reported by",
+    "reportType": "Type"
+  },
   "terms": {
     "title": "Terms of Service",
     "subtitle": "Please read these terms carefully before using MedShare arabia.",

@@ -13,8 +13,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Send, Check, AlertTriangle, Calendar, Clock } from "lucide-react";
+import { Send, Check, AlertTriangle, Calendar, Clock, Flag } from "lucide-react";
 import type { DeliveryConfirmation } from "@shared/schema";
+import { ReportDialog } from "@/components/report-dialog";
 
 export default function RequestDetailPage() {
   const { t, i18n } = useTranslation();
@@ -26,6 +27,7 @@ export default function RequestDetailPage() {
 
   const [messageContent, setMessageContent] = useState("");
   const [confirmQuantities, setConfirmQuantities] = useState<Array<{ unit: string; quantity: number }>>([]);
+  const [reportOpen, setReportOpen] = useState(false);
 
   const { data: requestData, isLoading } = useQuery<any>({
     queryKey: ["/api/requests", requestId],
@@ -108,13 +110,25 @@ export default function RequestDetailPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-serif font-bold" data-testid="text-request-detail-title">
-          {donation && (isAr ? donation.medicineNameAr || donation.medicineNameEn : donation.medicineNameEn)}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {t("browse.donatedBy")}: {requestData.requesterFirstName} {requestData.requesterLastName}
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-serif font-bold" data-testid="text-request-detail-title">
+            {donation && (isAr ? donation.medicineNameAr || donation.medicineNameEn : donation.medicineNameEn)}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {t("browse.donatedBy")}: {requestData.requesterFirstName} {requestData.requesterLastName}
+          </p>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground hover:text-destructive shrink-0"
+          onClick={() => setReportOpen(true)}
+          data-testid="button-report-request"
+        >
+          <Flag className="h-4 w-4 me-1" />
+          {t("report.title")}
+        </Button>
       </div>
 
       <Card>
@@ -285,6 +299,15 @@ export default function RequestDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      <ReportDialog
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        donationId={donation?.id}
+        requestId={requestId}
+        flaggedUserId={isDonor ? req.requesterId : donation?.donorId}
+        medicineName={donation && (isAr ? donation.medicineNameAr || donation.medicineNameEn : donation.medicineNameEn)}
+      />
     </div>
   );
 }

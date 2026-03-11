@@ -533,6 +533,24 @@ export async function registerRoutes(
     res.json(stats);
   });
 
+  app.post("/api/report", isAuthenticated, async (req: any, res) => {
+    const reporterId = (req.user as any).id;
+    const { reason, reportType, flaggedUserId, relatedDonationId, relatedRequestId } = req.body;
+    if (!reason || !reportType) {
+      return res.status(400).json({ message: "Reason and report type are required" });
+    }
+    const flag = await storage.createAdminFlag({
+      reason,
+      reportType,
+      reportedBy: reporterId,
+      flaggedUserId: flaggedUserId || null,
+      relatedDonationId: relatedDonationId || null,
+      relatedRequestId: relatedRequestId || null,
+      reviewed: false,
+    });
+    res.json(flag);
+  });
+
   app.get("/api/admin/flags", isAuthenticated, async (req: any, res) => {
     const userId = (req.user as any).id;
     const profile = await storage.getUserProfile(userId);

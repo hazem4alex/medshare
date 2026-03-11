@@ -110,6 +110,8 @@ export const adminFlags = pgTable("admin_flags", {
   relatedDonationId: integer("related_donation_id").references(() => donations.id),
   reviewed: boolean("reviewed").default(false).notNull(),
   reviewedBy: varchar("reviewed_by").references(() => users.id),
+  reportedBy: varchar("reported_by").references(() => users.id),
+  reportType: varchar("report_type", { length: 50 }).default("system").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
