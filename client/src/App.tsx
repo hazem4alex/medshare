@@ -24,6 +24,7 @@ import ProfilePage from "@/pages/profile";
 import AboutPage from "@/pages/about";
 import TermsPage from "@/pages/terms";
 import DisclaimerPage from "@/pages/disclaimer";
+import BannedPage from "@/pages/banned";
 import type { UserProfile } from "@shared/schema";
 import { useEffect } from "react";
 
@@ -101,6 +102,7 @@ function AppContent() {
       <Switch>
         <Route path="/terms" component={TermsPage} />
         <Route path="/disclaimer" component={DisclaimerPage} />
+        <Route path="/banned" component={BannedPage} />
         <Route component={LandingPage} />
       </Switch>
     );

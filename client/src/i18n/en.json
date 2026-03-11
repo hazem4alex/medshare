@@ -211,6 +211,11 @@
     "review": "Review",
     "markReviewed": "Mark as Reviewed",
     "users": "Users",
+    "noUsers": "No users found",
+    "banUser": "Ban User",
+    "unbanUser": "Unban User",
+    "banned": "Banned",
+    "active": "Active",
     "donations": "Donations",
     "deleteCategory": "Delete"
   },
@@ -330,5 +335,10 @@
     "feedbackDesc": "Have a suggestion, found a bug, or want to share an idea? We'd love to hear from you. Reach us at:",
     "developerTitle": "About the Developer",
     "developerRole": "Software Engineer"
+  },
+  "banned": {
+    "title": "Account Suspended",
+    "message": "Your account has been suspended due to a violation of MedShare's community guidelines. You are no longer able to log in.",
+    "contact": "If you believe this was a mistake, please contact the platform administrator to appeal this decision."
   }
 }

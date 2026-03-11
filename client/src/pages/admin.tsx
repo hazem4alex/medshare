@@ -10,12 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Shield, Plus, Trash2, Flag, Check } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Shield, Plus, Trash2, Flag, Check, Users, Ban, ShieldCheck } from "lucide-react";
 import type { MedicineCategory } from "@shared/schema";
 
 export default function AdminPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
+  const isRTL = i18n.dir() === "rtl";
 
   const [newCatNameEn, setNewCatNameEn] = useState("");
   const [newCatNameAr, setNewCatNameAr] = useState("");
@@ -26,6 +28,10 @@ export default function AdminPage() {
 
   const { data: flags, isLoading: flagsLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/flags"],
+  });
+
+  const { data: allUsers, isLoading: usersLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/users"],
   });
 
   const addCategoryMutation = useMutation({
@@ -63,6 +69,19 @@ export default function AdminPage() {
     },
   });
 
+  const banMutation = useMutation({
+    mutationFn: async ({ userId, action }: { userId: string; action: "ban" | "unban" }) => {
+      await apiRequest("PATCH", `/api/admin/users/${userId}/${action}`);
+    },
+    onSuccess: (_, { action }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({ title: action === "ban" ? t("admin.banUser") : t("admin.unbanUser") });
+    },
+    onError: (err: Error) => {
+      toast({ title: t("common.error"), description: err.message, variant: "destructive" });
+    },
+  });
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
       <div className="space-y-1">
@@ -76,6 +95,10 @@ export default function AdminPage() {
         <TabsList>
           <TabsTrigger value="categories" data-testid="tab-categories">{t("admin.categories")}</TabsTrigger>
           <TabsTrigger value="flags" data-testid="tab-flags">{t("admin.flags")}</TabsTrigger>
+          <TabsTrigger value="users" data-testid="tab-users">
+            <Users className="h-3.5 w-3.5 me-1" />
+            {t("admin.users")}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="categories" className="space-y-4 mt-4">
@@ -209,6 +232,106 @@ export default function AdminPage() {
                             <Check className="h-3 w-3 me-1" />
                             {t("admin.markReviewed")}
                           </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="users" className="space-y-4 mt-4">
+          {usersLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-20 w-full" />
+              ))}
+            </div>
+          ) : !allUsers?.length ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Users className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+                <p className="text-muted-foreground" data-testid="text-no-users">{t("admin.noUsers")}</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {allUsers.map((user: any) => (
+                <Card
+                  key={user.id}
+                  className={user.is_banned ? "border-destructive/30 bg-destructive/5" : ""}
+                  data-testid={`user-card-${user.id}`}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Avatar className="h-10 w-10 shrink-0">
+                          <AvatarImage src={user.profile_image_url ?? undefined} />
+                          <AvatarFallback className="text-sm bg-primary/10 text-primary font-semibold">
+                            {user.first_name?.[0]}{user.last_name?.[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-sm" data-testid={`text-user-name-${user.id}`}>
+                              {user.first_name} {user.last_name}
+                            </span>
+                            {user.is_admin && (
+                              <Badge variant="secondary" className="text-xs">
+                                <ShieldCheck className="h-3 w-3 me-1" />
+                                Admin
+                              </Badge>
+                            )}
+                            {user.is_banned ? (
+                              <Badge variant="destructive" className="text-xs" data-testid={`badge-banned-${user.id}`}>
+                                <Ban className="h-3 w-3 me-1" />
+                                {t("admin.banned")}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs text-green-600 border-green-200" data-testid={`badge-active-${user.id}`}>
+                                {t("admin.active")}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                          {user.country_name_en && (
+                            <p className="text-xs text-muted-foreground">
+                              {isRTL ? user.country_name_ar : user.country_name_en}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs text-muted-foreground hidden sm:block">
+                          {new Date(user.created_at).toLocaleDateString()}
+                        </span>
+                        {!user.is_admin && (
+                          user.is_banned ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => banMutation.mutate({ userId: user.id, action: "unban" })}
+                              disabled={banMutation.isPending}
+                              data-testid={`button-unban-${user.id}`}
+                            >
+                              <ShieldCheck className="h-3.5 w-3.5 me-1 text-green-600" />
+                              {t("admin.unbanUser")}
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => banMutation.mutate({ userId: user.id, action: "ban" })}
+                              disabled={banMutation.isPending}
+                              className="text-destructive border-destructive/30"
+                              data-testid={`button-ban-${user.id}`}
+                            >
+                              <Ban className="h-3.5 w-3.5 me-1" />
+                              {t("admin.banUser")}
+                            </Button>
+                          )
                         )}
                       </div>
                     </div>

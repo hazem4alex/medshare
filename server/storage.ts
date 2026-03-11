@@ -71,6 +71,10 @@ export interface IStorage {
   getAdminFlags(): Promise<any[]>;
   markFlagReviewed(id: number, reviewedBy: string): Promise<void>;
 
+  getAllUsers(): Promise<any[]>;
+  banUser(userId: string): Promise<void>;
+  unbanUser(userId: string): Promise<void>;
+
   getActiveDonationsCount(userId: string): Promise<number>;
   getDashboardStats(userId: string): Promise<any>;
 
@@ -413,6 +417,37 @@ export class DatabaseStorage implements IStorage {
 
   async markFlagReviewed(id: number, reviewedBy: string): Promise<void> {
     await db.update(adminFlags).set({ reviewed: true, reviewedBy }).where(eq(adminFlags.id, id));
+  }
+
+  async getAllUsers(): Promise<any[]> {
+    const rows = await db.execute(sql`
+      SELECT
+        u.id,
+        u.email,
+        u.first_name,
+        u.last_name,
+        u.profile_image_url,
+        u.created_at,
+        up.is_admin,
+        up.is_banned,
+        up.country_id,
+        up.active_donations_count,
+        c.name_en AS country_name_en,
+        c.name_ar AS country_name_ar
+      FROM users u
+      LEFT JOIN user_profiles up ON u.id = up.user_id
+      LEFT JOIN countries c ON up.country_id = c.id
+      ORDER BY u.created_at DESC
+    `);
+    return rows.rows as any[];
+  }
+
+  async banUser(userId: string): Promise<void> {
+    await db.update(userProfiles).set({ isBanned: true }).where(eq(userProfiles.userId, userId));
+  }
+
+  async unbanUser(userId: string): Promise<void> {
+    await db.update(userProfiles).set({ isBanned: false }).where(eq(userProfiles.userId, userId));
   }
 
   async getActiveDonationsCount(userId: string): Promise<number> {

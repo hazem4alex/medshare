@@ -567,5 +567,31 @@ export async function registerRoutes(
     res.json({ success: true });
   });
 
+  app.get("/api/admin/users", isAuthenticated, async (req: any, res) => {
+    const userId = (req.user as any).id;
+    const profile = await storage.getUserProfile(userId);
+    if (!profile?.isAdmin) return res.status(403).json({ message: "Admin access required" });
+    const users = await storage.getAllUsers();
+    res.json(users);
+  });
+
+  app.patch("/api/admin/users/:id/ban", isAuthenticated, async (req: any, res) => {
+    const adminId = (req.user as any).id;
+    const profile = await storage.getUserProfile(adminId);
+    if (!profile?.isAdmin) return res.status(403).json({ message: "Admin access required" });
+    const targetId = req.params.id;
+    if (targetId === adminId) return res.status(400).json({ message: "Cannot ban yourself" });
+    await storage.banUser(targetId);
+    res.json({ success: true });
+  });
+
+  app.patch("/api/admin/users/:id/unban", isAuthenticated, async (req: any, res) => {
+    const adminId = (req.user as any).id;
+    const profile = await storage.getUserProfile(adminId);
+    if (!profile?.isAdmin) return res.status(403).json({ message: "Admin access required" });
+    await storage.unbanUser(req.params.id);
+    res.json({ success: true });
+  });
+
   return httpServer;
 }

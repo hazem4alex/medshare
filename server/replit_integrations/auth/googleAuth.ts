@@ -4,6 +4,7 @@ import session from "express-session";
 import connectPg from "connect-pg-simple";
 import type { Express, RequestHandler } from "express";
 import { authStorage } from "./storage";
+import { storage } from "../../storage";
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000;
@@ -51,6 +52,10 @@ export async function setupAuth(app: Express) {
             lastName: profile.name?.familyName ?? null,
             profileImageUrl: profile.photos?.[0]?.value ?? null,
           });
+          const userProfile = await storage.getUserProfile(user.id);
+          if (userProfile?.isBanned) {
+            return done(null, false as any);
+          }
           return done(null, user);
         } catch (err) {
           return done(err as Error);
@@ -66,9 +71,12 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/callback", (req, res, next) => {
     passport.authenticate("google", (err: any, user: any) => {
-      if (err || !user) {
+      if (err) {
         console.error("Google OAuth error:", err);
         return res.redirect("/api/login");
+      }
+      if (!user) {
+        return res.redirect("/banned");
       }
       req.login(user, (loginErr) => {
         if (loginErr) {
@@ -95,9 +103,17 @@ export async function setupAuth(app: Express) {
   });
 }
 
-export const isAuthenticated: RequestHandler = (req, res, next) => {
-  if (req.isAuthenticated()) {
-    return next();
+export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized" });
   }
-  res.status(401).json({ message: "Unauthorized" });
+  const userId = (req.user as any)?.id;
+  if (userId) {
+    const profile = await storage.getUserProfile(userId);
+    if (profile?.isBanned) {
+      req.logout(() => req.session.destroy(() => {}));
+      return res.status(403).json({ message: "Account suspended" });
+    }
+  }
+  return next();
 };

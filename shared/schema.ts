@@ -33,6 +33,7 @@ export const userProfiles = pgTable("user_profiles", {
   areaId: integer("area_id").references(() => areas.id),
   declarationAccepted: boolean("declaration_accepted").default(false).notNull(),
   isAdmin: boolean("is_admin").default(false).notNull(),
+  isBanned: boolean("is_banned").default(false).notNull(),
   activeDonationsCount: integer("active_donations_count").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
