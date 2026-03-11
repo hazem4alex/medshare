@@ -131,12 +131,24 @@ export default function LandingPage() {
       </section>
 
       <section className="py-12 border-t bg-muted/30">
-        <div className="max-w-6xl mx-auto px-4 text-center">
+        <div className="max-w-6xl mx-auto px-4 text-center space-y-4">
+          <p className="text-sm text-foreground/80 max-w-xl mx-auto leading-relaxed">
+            {t("landing.platformDesc")}
+          </p>
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <Shield className="h-4 w-4" />
             <span>{t("landing.noCommercial")}</span>
           </div>
-          <p className="mt-4 text-xs text-muted-foreground">
+          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+            <a href="/terms" className="hover:text-primary underline underline-offset-2 transition-colors" data-testid="link-terms">
+              {t("nav.terms")}
+            </a>
+            <span>·</span>
+            <a href="/disclaimer" className="hover:text-primary underline underline-offset-2 transition-colors" data-testid="link-disclaimer">
+              {t("nav.medDisclaimer")}
+            </a>
+          </div>
+          <p className="text-xs text-muted-foreground">
             &copy; {new Date().getFullYear()} MedShare. {t("app.disclaimer")}
           </p>
         </div>

@@ -22,6 +22,8 @@ import RequestDetailPage from "@/pages/request-detail";
 import AdminPage from "@/pages/admin";
 import ProfilePage from "@/pages/profile";
 import AboutPage from "@/pages/about";
+import TermsPage from "@/pages/terms";
+import DisclaimerPage from "@/pages/disclaimer";
 import type { UserProfile } from "@shared/schema";
 import { useEffect } from "react";
 
@@ -37,6 +39,8 @@ function AuthenticatedRouter() {
       <Route path="/admin" component={AdminPage} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/about" component={AboutPage} />
+      <Route path="/terms" component={TermsPage} />
+      <Route path="/disclaimer" component={DisclaimerPage} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -93,7 +97,13 @@ function AppContent() {
   }
 
   if (!user) {
-    return <LandingPage />;
+    return (
+      <Switch>
+        <Route path="/terms" component={TermsPage} />
+        <Route path="/disclaimer" component={DisclaimerPage} />
+        <Route component={LandingPage} />
+      </Switch>
+    );
   }
 
   if (profileLoading) {

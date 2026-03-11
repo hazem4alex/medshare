@@ -17,7 +17,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, Search, HeartHandshake, Package, ClipboardList, Shield, LogOut, User, Info } from "lucide-react";
+import { Home, Search, HeartHandshake, Package, ClipboardList, Shield, LogOut, User, Info, FileText, AlertTriangle } from "lucide-react";
 import type { UserProfile } from "@shared/schema";
 
 export function AppSidebar() {
@@ -95,6 +95,29 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>{t("nav.terms")}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild data-active={location === "/terms"} className="data-[active=true]:bg-sidebar-accent">
+                  <Link href="/terms" onClick={() => handleNavClick("/terms")} data-testid="link-nav-terms">
+                    <FileText className="h-4 w-4" />
+                    <span>{t("nav.terms")}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild data-active={location === "/disclaimer"} className="data-[active=true]:bg-sidebar-accent">
+                  <Link href="/disclaimer" onClick={() => handleNavClick("/disclaimer")} data-testid="link-nav-disclaimer">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span>{t("nav.medDisclaimer")}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

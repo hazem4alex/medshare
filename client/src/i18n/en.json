@@ -15,6 +15,8 @@
     "admin": "Admin Panel",
     "profile": "Profile",
     "about": "About",
+    "terms": "Terms of Service",
+    "medDisclaimer": "Medical Disclaimer",
     "logout": "Log Out",
     "login": "Log In"
   },
@@ -34,7 +36,8 @@
     "step2": "Donate surplus medicines or browse available ones",
     "step3": "Request what you need and coordinate delivery",
     "charitableOnly": "Charitable Use Only",
-    "noCommercial": "This platform is strictly for charitable purposes. Commercial use is prohibited."
+    "noCommercial": "This platform is strictly for charitable purposes. Commercial use is prohibited.",
+    "platformDesc": "MedShare is a community platform that connects individuals who wish to donate unused medications. The platform does not sell or distribute medicines."
   },
   "auth": {
     "welcome": "Welcome back",
@@ -240,6 +243,48 @@
     "boxes": "Boxes",
     "strips": "Strips",
     "pills": "Pills"
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "subtitle": "Please read these terms carefully before using MedShare arabia.",
+    "s1title": "1. Nature of the Platform",
+    "s1": "MedShare arabia is an online community platform that connects individuals who wish to donate or share unused medications with others who may need them. MedShare does not sell, distribute, or supply medications and is not a pharmacy.",
+    "s2title": "2. User Responsibility",
+    "s2": "Users are fully responsible for any medication they list, request, or exchange through the platform, including:",
+    "s2b1": "Authenticity of the medication",
+    "s2b2": "Expiration date",
+    "s2b3": "Storage conditions",
+    "s2b4": "Compliance with local laws",
+    "s3title": "3. No Warranty",
+    "s3": "MedShare does not guarantee the quality, safety, or effectiveness of any medication shared through the platform.",
+    "s4title": "4. Prohibited Items",
+    "s4": "Users are strictly prohibited from listing or exchanging:",
+    "s4b1": "Controlled or narcotic drugs",
+    "s4b2": "Prescription-only medications where prohibited by law",
+    "s4b3": "Expired medications",
+    "s4b4": "Counterfeit or unidentified medications",
+    "s5title": "5. No Medical Advice",
+    "s5": "MedShare does not provide medical advice, diagnosis, or treatment recommendations.",
+    "s6title": "6. Limitation of Liability",
+    "s6": "MedShare, its owners, developers, and operators shall not be held liable for:",
+    "s6b1": "Any health issues resulting from medications obtained through the platform",
+    "s6b2": "Disputes between users",
+    "s6b3": "Any misuse of the platform",
+    "s7title": "7. Compliance with Laws",
+    "s7": "Users are responsible for complying with the laws and regulations of their respective countries.",
+    "s8title": "8. Content Removal",
+    "s8": "MedShare arabia reserves the right to remove any content or suspend accounts that violate these terms.",
+    "s9title": "9. Acceptance of Terms",
+    "s9": "By using the platform, you acknowledge and agree to these Terms of Service."
+  },
+  "medDisclaimer": {
+    "title": "Medical Disclaimer",
+    "subtitle": "Important notice regarding medical information on this platform.",
+    "intro": "MedShare arabia is a community platform intended only to facilitate connections between individuals. The platform does not provide medical advice, diagnosis, or treatment.",
+    "b1": "Information available on the platform is for informational and community purposes only.",
+    "b2": "MedShare does not verify or guarantee the safety, quality, or effectiveness of medications listed by users.",
+    "b3": "Users should always consult a qualified healthcare professional before using any medication.",
+    "closing": "By using this platform, you acknowledge that you assume full responsibility for any decisions or actions taken based on information or medications obtained through MedShare."
   },
   "about": {
     "title": "About MedShare",
