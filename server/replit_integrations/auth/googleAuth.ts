@@ -7,6 +7,9 @@ import { authStorage } from "./storage";
 import { storage } from "../../storage";
 
 export function getSession() {
+  if (!process.env.SESSION_SECRET) {
+    throw new Error("SESSION_SECRET must be set.");
+  }
   const sessionTtl = 7 * 24 * 60 * 60 * 1000;
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
